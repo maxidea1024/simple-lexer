@@ -129,6 +129,11 @@ char Lexer::UngetChar() {
   current_char_--;
   if (*current_char_ == '\n') {
     current_line_--;
+    //FIXME: 이전줄의 끝의 컬럼 번호로 해주어야함!
+    //FIXME: 이전줄의 끝의 컬럼 번호로 해주어야함!
+    //FIXME: 이전줄의 끝의 컬럼 번호로 해주어야함!
+    //FIXME: 이전줄의 끝의 컬럼 번호로 해주어야함!
+    //FIXME: 이전줄의 끝의 컬럼 번호로 해주어야함!
   } else if (*current_char_ == '\t') {
     current_column_ -= tab_size_;
   } else {
