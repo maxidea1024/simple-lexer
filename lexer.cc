@@ -124,6 +124,21 @@ char Lexer::NextChar() {
   return c;
 }
 
+char Lexer::UngetChar() {
+  assert(current_char_ > source_);
+
+  current_char_--;
+  if (*current_char_ == '\n') {
+    current_line_--;
+  } else if (*current_char_ == '\t') {
+    current_column_ -= tab_size_;
+  } else {
+    current_column_--;
+  }
+
+  return *current_char_;
+}
+
 // If the current character is [c], consumes it and returns `true`.
 bool Lexer::MatchChar(char c) {
   if (PeekChar() != c) {
@@ -209,7 +224,8 @@ int Lexer::ReadHexDigit() {
 
   // Don't consume it if it isn't expected. Keeps us from reading past the end
   // of an unterminated string.
-  current_char_--;
+  //current_char_--;
+  UngetChar();
   return -1;
 }
 
@@ -304,7 +320,8 @@ int Lexer::ReadHexEscape(int digits, const char* tag) {
 
       // Don't consume it if it isn't expected. Keeps us from reading past the
       // end of an unterminated string.
-      current_char_--;
+      //current_char_--;
+      UngetChar();
       break;
     }
 
@@ -347,7 +364,8 @@ void Lexer::PrepareReadString(char quote_char, bool force_verbatim) {
     if (MatchChar(quote_char)) {
       read_string_quote_count_ = 3;
     } else {
-      current_char_--;
+      //current_char_--;
+      UngetChar();
     }
   }
 
@@ -373,7 +391,8 @@ void Lexer::ReadString() {
           if (MatchChar(read_string_quote_char_)) {
             break;
           } else {
-            current_char_--;
+            //current_char_--;
+            UngetChar();
           }
         }
       }
@@ -384,7 +403,8 @@ void Lexer::ReadString() {
 
       // Don't consume it if it isn't expected. Keeps us from reading past the
       // end of an unterminated string.
-      current_char_--;
+      //current_char_--;
+      UngetChar();
       break;
     }
 

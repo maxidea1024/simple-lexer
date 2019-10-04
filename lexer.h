@@ -162,6 +162,7 @@ class Lexer {
   char PeekChar() const;
   char PeekNextChar() const;
   char NextChar();
+  char UngetChar();
   bool MatchChar(char c);
   void MakeToken(TokenType type);
   void TwoCharToken(char c, TokenType two, TokenType one);
