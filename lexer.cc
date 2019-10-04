@@ -108,11 +108,7 @@ char Lexer::PeekNextChar() const {
 // Advances the lexer forward one character.
 char Lexer::NextChar() {
   char c = PeekChar();
-  if (*current_char_ == '\0') {
-    assert(0);
-    return '\0';
-  }
-
+  assert(*current_char_);
   current_char_++;
   if (c == '\n') {
     current_line_++;
@@ -360,7 +356,7 @@ void Lexer::ReadString() {
         //   {<interpolationExpression>[,<alignment>][:<formatString>]}
 
         if (NextChar() != '{') {
-          LexError("Expect '{' after '%'.");
+          LexError("Expect '{' after '$'.");
         }
 
         braces_[num_braces_++] = 1;
@@ -425,13 +421,19 @@ void Lexer::ReadString() {
     } else {
       AppendChar(&string, c);
     }
-
-    // current.value = NewStringLength(vm, (char*)string.data, string.count);
-    // ByteBufferClear(vm, &string);
-    current.value = Value(&string[0], string.size());
-
-    MakeToken(type);
   }
+
+  // current.value = NewStringLength(vm, (char*)string.data, string.count);
+  // ByteBufferClear(vm, &string);
+
+  if (string.size() > 0) {
+    current.value = Value(&string[0], string.size());
+  } else {
+    current.value = Value("", 0);
+  }
+  string.clear();
+
+  MakeToken(type);
 }
 
 void Lexer::NextToken() {
@@ -626,6 +628,8 @@ void Lexer::NextToken() {
 
 void Lexer::LexError(const char* error, ...) {
   // TODO
+  printf("!!!\n");
+
 }
 
 std::string Token::TypeName() const {
@@ -745,25 +749,11 @@ std::string Token::TypeName() const {
     case TOKEN_NUMBER:
       return "number";
 
-    // A string literal without any interpolation, or the last section of a
-    // string following the last interpolated expression.
     case TOKEN_STRING:
       return "string";
 
-    // A portion of a string literal preceding an interpolated expression. This
-    // string:
-    //
-    //     "a %(b) c %(d) e"
-    //
-    // is tokenized to:
-    //
-    //     TOKEN_INTERPOLATION "a "
-    //     TOKEN_NAME          b
-    //     TOKEN_INTERPOLATION " c "
-    //     TOKEN_NAME          d
-    //     TOKEN_STRING        " e"
     case TOKEN_INTERPOLATION:
-      return "interpolation";
+       return "interpolation";
 
     case TOKEN_LINE:
       return "line";
@@ -781,13 +771,15 @@ std::string Token::ToString() const {
   std::string ret = TypeName();
 
   switch (type) {
-    case TOKEN_FIELD:
-    case TOKEN_STATIC_FIELD:
-    case TOKEN_NAME:
     case TOKEN_NUMBER:
     case TOKEN_STRING:
       ret += " : ";
       ret += value.ToString();
+      break;
+
+    default:
+      ret += " : ";
+      ret += std::string(start, length);
       break;
   }
 
