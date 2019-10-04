@@ -102,24 +102,24 @@ class Lexer {
 
   void Init(const char* source, int source_length);
 
-  char Lexer::PeekChar();
-  char Lexer::PeekNextChar();
-  char Lexer::NextChar();
-  bool Lexer::MatchChar(char c);
-  void Lexer::MakeToken(TokenType type);
-  void Lexer::TwoCharToken(char c, TokenType two, TokenType one);
-  void Lexer::SkipLineComment();
-  void Lexer::SkipBlockComment();
-  int  Lexer::ReadHexDigit();
-  void Lexer::MakeNumber(bool hex);
-  void Lexer::ReadHexNumber();
-  void Lexer::ReadNumber();
-  void Lexer::ReadName(TokenType type);
-  int  Lexer::ReadHexEscape(int digits, const char* tag);
-  void Lexer::ReadUnicodeEscape(ByteBuffer* string, int length);
-  void Lexer::ReadString();
-  void Lexer::NextToken();
-  void Lexer::LexError(const char* error, ...);
+  char PeekChar() const;
+  char PeekNextChar() const;
+  char NextChar();
+  bool MatchChar(char c);
+  void MakeToken(TokenType type);
+  void TwoCharToken(char c, TokenType two, TokenType one);
+  void SkipLineComment();
+  void SkipBlockComment();
+  int  ReadHexDigit();
+  void MakeNumber(bool hex);
+  void ReadHexNumber();
+  void ReadNumber();
+  void ReadName(TokenType type);
+  int  ReadHexEscape(int digits, const char* tag);
+  void ReadUnicodeEscape(ByteBuffer* string, int length);
+  void ReadString();
+  void NextToken();
+  void LexError(const char* error, ...);
 
   // Member variables
  public:

@@ -62,10 +62,10 @@ void Lexer::Init(const char* source, int source_length) {
   current_line_ = 1;
   num_braces_ = 0;
 
-  current_.type = TOKEN_ERROR;
-  current_.start = source;
-  current_.length = 0;
-  current_.line = UNDEFINED_VAL;
+  current.type = TOKEN_ERROR;
+  current.start = source;
+  current.length = 0;
+  current.line = UNDEFINED_VAL;
 
   // Ignore leading newlines.
   skip_new_lines_ = true;
@@ -74,8 +74,6 @@ void Lexer::Init(const char* source, int source_length) {
   // Read the first token.
   NextToken();
 }
-
-
 
 // Returns true if [c] is a valid (non-initial) identifier character.
 inline bool IsName(char c) {
@@ -86,10 +84,10 @@ inline bool IsName(char c) {
 inline bool IsDigit(char c) { return c >= '0' && c <= '9'; }
 
 // Returns the current character the lexer is sitting on.
-char Lexer::PeekChar() { return *current_char_; }
+char Lexer::PeekChar() const { return *current_char_; }
 
 // Returns the character after the current character.
-char Lexer::PeekNextChar() {
+char Lexer::PeekNextChar() const {
   // If we're at the end of the source, don't read past it.
   if (PeekChar() == '\0') {
     return '\0';
@@ -122,14 +120,14 @@ bool Lexer::MatchChar(char c) {
 // Sets the lexer's current token to the given [type] and current character
 // range.
 void Lexer::MakeToken(TokenType type) {
-  current_.type = type;
-  current_.start = token_start_;
-  current_.length = (int)(current_char_ - token_start_);
-  current_.line = current_line_;
+  current.type = type;
+  current.start = token_start_;
+  current.length = (int)(current_char_ - token_start_);
+  current.line = current_line_;
 
   // Make line tokens appear on the line containing the "\n".
   if (type == TOKEN_LINE) {
-    current_.line--;
+    current.line--;
   }
 }
 
@@ -201,15 +199,15 @@ void Lexer::MakeNumber(bool hex) {
   errno = 0;
 
   if (hex) {
-    current_.value =
+    current.value =
         NUM_VAL((double)strtoll(token_start_, NULL, 16));
   } else {
-    current_.value = NUM_VAL(strtod(token_start_, NULL));
+    current.value = NUM_VAL(strtod(token_start_, NULL));
   }
 
   if (errno == ERANGE) {
     LexError("Number literal was too large (%d).", sizeof(long int));
-    current_.value = NUM_VAL(0);
+    current.value = NUM_VAL(0);
   }
 
   // We don't check that the entire token is consumed after calling strtoll()
@@ -416,7 +414,7 @@ void Lexer::ReadString() {
       ByteBufferWrite(vm, &string, c);
     }
 
-    current_.value =
+    current.value =
         NewStringLength(vm, (char*)string.data, string.count);
 
     ByteBufferClear(vm, &string);
@@ -425,9 +423,9 @@ void Lexer::ReadString() {
 }
 
 void Lexer::NextToken() {
-  previous_ = current_;
+  previous = current;
 
-  if (current_.type == TOKEN_EOF) {
+  if (current.type == TOKEN_EOF) {
     return;
   }
 
@@ -598,8 +596,8 @@ void Lexer::NextToken() {
             LexError("Invalid byte 0x%x.", (uint8_t)c);
           }
 
-          current_.type = TOKEN_ERROR;
-          current_.length = 0;
+          current.type = TOKEN_ERROR;
+          current.length = 0;
         }
 
         return;
