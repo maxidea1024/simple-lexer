@@ -20,7 +20,7 @@ int main(int argc, char* argv[]) {
   //);
 
   l.Init(
-    "''Hello world\\n''\n"
+    "'Hello world'"
   );
 
   while (l.HasNextToken()) {

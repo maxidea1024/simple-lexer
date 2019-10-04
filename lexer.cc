@@ -1,3 +1,4 @@
+//TODO UngetChar를 만들어주는게 좋을듯 하다. line / column number를 트래킹하기 위해서.
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -347,10 +348,6 @@ void Lexer::PrepareReadString(char quote_char, bool force_verbatim) {
       read_string_quote_count_ = 3;
     } else {
       current_char_--;
-
-      //이렇게 처리하면 안될텐데...
-      //current.type = TOKEN_ERROR;
-      //current.length = 0;
     }
   }
 
