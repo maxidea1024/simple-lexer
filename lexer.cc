@@ -1,4 +1,3 @@
-//TODO UngetChar를 만들어주는게 좋을듯 하다. line / column number를 트래킹하기 위해서.
 #include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
