@@ -16,13 +16,6 @@
   TOKEN_INTERPOLATION,
 */
 
-
-// The maximum depth that interpolation can nest. For example, this string has
-// three levels:
-//
-//      "outside %(one + "%(two + "%(three)")")"
-#define MAX_INTERPOLATION_NESTING 8
-
 struct Keyword {
   const char* identifier;
   size_t length;

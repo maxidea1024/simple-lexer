@@ -102,20 +102,45 @@ class Lexer {
 
   void Init(const char* source, int source_length);
 
+  char Lexer::PeekChar();
+  char Lexer::PeekNextChar();
+  char Lexer::NextChar();
+  bool Lexer::MatchChar(char c);
+  void Lexer::MakeToken(TokenType type);
+  void Lexer::TwoCharToken(char c, TokenType two, TokenType one);
+  void Lexer::SkipLineComment();
+  void Lexer::SkipBlockComment();
+  int  Lexer::ReadHexDigit();
+  void Lexer::MakeNumber(bool hex);
+  void Lexer::ReadHexNumber();
+  void Lexer::ReadNumber();
+  void Lexer::ReadName(TokenType type);
+  int  Lexer::ReadHexEscape(int digits, const char* tag);
+  void Lexer::ReadUnicodeEscape(ByteBuffer* string, int length);
+  void Lexer::ReadString();
+  void Lexer::NextToken();
+  void Lexer::LexError(const char* error, ...);
 
   // Member variables
- protected:
-  const char* source;
-  const char* tokenStart;
-  const char* currentChar;
-  int currentLine;
+ public:
   Token current;
   Token previous;
 
-  int braces[MAX_INTERPOLATION_NESTING];
-  int numBraces;
+ protected:
+  const char* source_;
+  const char* token_start_;
+  const char* current_char_;
+  int current_line_;
 
-  bool skip_new_lines;
-  bool print_errors;
-  bool has_errors;
+  // The maximum depth that interpolation can nest. For example, this string has
+  // three levels:
+  //
+  //      "outside %(one + "%(two + "%(three)")")"
+  static const int MAX_INTERPOLATION_NESTING = 8;
+  int braces_[MAX_INTERPOLATION_NESTING];
+  int numBraces_;
+
+  bool skip_new_lines_;
+  bool print_errors_;
+  bool has_errors_;
 };
