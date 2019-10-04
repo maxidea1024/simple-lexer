@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vector>
+
 #include "value.h"
 
 // {} : braces
@@ -119,7 +121,7 @@ class Lexer {
   void ReadNumber();
   void ReadName(TokenType type);
   int ReadHexEscape(int digits, const char* tag);
-  void ReadUnicodeEscape(ByteBuffer* string, int length);
+  void ReadUnicodeEscape(std::vector<char>* string, int length);
   void ReadString();
   void NextToken();
   void LexError(const char* error, ...);

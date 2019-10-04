@@ -1,7 +1,11 @@
-#include "lexer.h"
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>
+
+#include "lexer.h"
+#include "util.h"
+#include "strings.h"
+
 
 /*
   // A portion of a string literal preceding an interpolated expression. This
@@ -304,22 +308,25 @@ int Lexer::ReadHexEscape(int digits, const char* tag) {
 }
 
 // Reads a hex digit Unicode escape sequence in a string literal.
-void Lexer::ReadUnicodeEscape(ByteBuffer* string, int length) {
+void Lexer::ReadUnicodeEscape(std::vector<char>* string, int length) {
   int value = ReadHexEscape(length, "Unicode");
 
   // Grow the buffer enough for the encoded result.
   int num_bytes = Utf8EncodeNumBytes(value);
   if (num_bytes > 0) {
-    ByteBufferFill(vm, string, 0, num_bytes);
-    Utf8Encode(value, string->data + string->count - num_bytes);
+    string->resize(string->size() + num_bytes);
+    Utf8Encode(value, string->data + string->size() - num_bytes);
   }
+}
+
+inline void AppendChar(std::vector<char>* string, char ch) {
+  string->push_back(ch);
 }
 
 // Finishes lexing a string literal.
 void Lexer::ReadString() {
-  ByteBuffer string;
+  std::vector<char> string;
   TokenType type = TOKEN_STRING;
-  ByteBufferInit(&string);
 
   for (;;) {
     char c = NextChar();
@@ -353,7 +360,7 @@ void Lexer::ReadString() {
         break;
       }
 
-      LexError(parse, "Interpolation may only nest %d levels deep.",
+      LexError("Interpolation may only nest %d levels deep.",
                MAX_INTERPOLATION_NESTING);
     }
 
@@ -361,34 +368,34 @@ void Lexer::ReadString() {
       char c2 = NextChar();
       switch (c2) {
         case '"':
-          ByteBufferWrite(vm, &string, '"');
+          AppendChar(&string, '"');
           break;
         case '\\':
-          ByteBufferWrite(vm, &string, '\\');
+          AppendChar(&string, '\\');
           break;
         case '%':
-          ByteBufferWrite(vm, &string, '%');
+          AppendChar(&string, '%');
           break;
         case '0':
-          ByteBufferWrite(vm, &string, '\0');
+          AppendChar(&string, '\0');
           break;
         case 'a':
-          ByteBufferWrite(vm, &string, '\a');
+          AppendChar(&string, '\a');
           break;
         case 'b':
-          ByteBufferWrite(vm, &string, '\b');
+          AppendChar(&string, '\b');
           break;
         case 'f':
-          ByteBufferWrite(vm, &string, '\f');
+          AppendChar(&string, '\f');
           break;
         case 'n':
-          ByteBufferWrite(vm, &string, '\n');
+          AppendChar(&string, '\n');
           break;
         case 'r':
-          ByteBufferWrite(vm, &string, '\r');
+          AppendChar(&string, '\r');
           break;
         case 't':
-          ByteBufferWrite(vm, &string, '\t');
+          AppendChar(&string, '\t');
           break;
         case 'u':
           ReadUnicodeEscape(&string, 4);
@@ -397,10 +404,10 @@ void Lexer::ReadString() {
           ReadUnicodeEscape(&string, 8);
           break;
         case 'v':
-          ByteBufferWrite(vm, &string, '\v');
+          AppendChar(&string, '\v');
           break;
         case 'x':
-          ByteBufferWrite(vm, &string, (uint8_t)ReadHexEscape(2, "byte"));
+          AppendChar(&string, (uint8_t)ReadHexEscape(2, "byte"));
           break;
 
         default:
@@ -408,12 +415,13 @@ void Lexer::ReadString() {
           break;
       }
     } else {
-      ByteBufferWrite(vm, &string, c);
+      AppendChar(&string, c);
     }
 
-    current.value = NewStringLength(vm, (char*)string.data, string.count);
+    //current.value = NewStringLength(vm, (char*)string.data, string.count);
+    //ByteBufferClear(vm, &string);
+    current.value.val.string_ = Strings::instance().Add(&string[0], string.size());
 
-    ByteBufferClear(vm, &string);
     MakeToken(type);
   }
 }
