@@ -1,7 +1,7 @@
+#include <assert.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #include "lexer.h"
 #include "strings.h"
@@ -57,13 +57,13 @@ Lexer::Lexer() { Init("", 0); }
 
 Lexer::Lexer(const char* source) { Init(source, strlen(source)); }
 
-Lexer::Lexer(const char* source, int source_length) {
+Lexer::Lexer(const char* source, size_t source_length) {
   Init(source, source_length);
 }
 
 void Lexer::Init(const char* source) { Init(source, strlen(source)); }
 
-void Lexer::Init(const char* source, int source_length) {
+void Lexer::Init(const char* source, size_t source_length) {
   source_ = source;
   token_start_ = source;
   current_char_ = source;
@@ -578,7 +578,7 @@ void Lexer::NextToken() {
         ReadString();
         return;
 
-      //TODO: 이건 오바 아닌가??
+      // TODO: 이건 오바 아닌가??
       case '_':
         ReadName(PeekChar() == '_' ? TOKEN_STATIC_FIELD : TOKEN_FIELD);
         return;

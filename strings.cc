@@ -1,13 +1,6 @@
 #include "strings.h"
 
-Strings& Strings::instance() {
-  static Strings inst;
-  return inst;
-}
-
-Strings::Strings() {}
-
-Strings::~Strings() {}
+std::vector<std::string> Strings::registry_;
 
 const char* Strings::Add(const char* str) { return Add(str, strlen(str)); }
 

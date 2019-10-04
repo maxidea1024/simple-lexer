@@ -108,10 +108,10 @@ class Lexer {
  public:
   Lexer();
   Lexer(const char* source);
-  Lexer(const char* source, int source_length);
+  Lexer(const char* source, size_t source_length);
 
   void Init(const char* source);
-  void Init(const char* source, int source_length);
+  void Init(const char* source, size_t source_length);
 
   char PeekChar() const;
   char PeekNextChar() const;
