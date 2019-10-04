@@ -53,12 +53,16 @@ void Lexer::Init(const char* source, size_t source_length) {
   token_start_ = source;
   current_char_ = source;
   current_line_ = 1;
-  num_braces_ = 0;
+  current_column_ = 1;
+  num_interp_braces_ = 0;
+
+  tab_size_ = 2;
 
   current.type = TOKEN_ERROR;
   current.start = source;
   current.length = 0;
   current.line = 0;
+  current.column = 0;
   current.value = Value::NONE;
 
   // Ignore leading newlines.
@@ -71,6 +75,14 @@ void Lexer::Init(const char* source, size_t source_length) {
 
 bool Lexer::IsEOF() const {
   return current.type == TOKEN_EOF;
+}
+
+bool Lexer::IsError() const {
+  return current.type == TOKEN_ERROR;
+}
+
+bool Lexer::HasNextToken() const {
+  return !IsEOF() && !IsError();
 }
 
 // Returns true if [c] is a valid (non-initial) identifier character.
@@ -101,6 +113,11 @@ char Lexer::NextChar() {
   current_char_++;
   if (c == '\n') {
     current_line_++;
+    current_column_ = 1;
+  } else if (c == '\t') {
+    current_column_ += tab_size_;
+  } else {
+    current_column_++;
   }
 
   return c;
@@ -123,6 +140,7 @@ void Lexer::MakeToken(TokenType type) {
   current.start = token_start_;
   current.length = (int)(current_char_ - token_start_);
   current.line = current_line_;
+  current.column = current_column_;
 
   // Make line tokens appear on the line containing the "\n".
   if (type == TOKEN_LINE) {
@@ -317,6 +335,28 @@ inline void AppendChar(std::vector<char>* string, char ch) {
   string->push_back(ch);
 }
 
+void Lexer::PrepareReadString(char quote_char, bool force_verbatim) {
+  read_string_quote_char_ = quote_char;
+
+  read_string_quote_count_ = 1;
+
+  // quote 다음에 라인피드가 있을 경우에는 어떤식으로 처리해야할까?
+
+  if (MatchChar(quote_char)) {
+    if (MatchChar(quote_char)) {
+      read_string_quote_count_ = 3;
+    } else {
+      current_char_--;
+
+      //이렇게 처리하면 안될텐데...
+      //current.type = TOKEN_ERROR;
+      //current.length = 0;
+    }
+  }
+
+  read_string_verbatim_ = (force_verbatim || read_string_quote_count_ == 3);
+}
+
 // Finishes lexing a string literal.
 void Lexer::ReadString() {
   std::vector<char> string;
@@ -324,8 +364,22 @@ void Lexer::ReadString() {
 
   for (;;) {
     char c = NextChar();
-    if (c == '"') {
-      break;
+    if (c == read_string_quote_char_) {
+      if (read_string_quote_count_ == 1) {
+        break;
+      } else {
+        // three quotes
+        //warning:
+        // quote 문자 뒤에 라인피드가 오면 문제가 발생할 수 있음!
+        // 이부분에 대해서는 보완이 필요함.
+        if (MatchChar(read_string_quote_char_)) {
+          if (MatchChar(read_string_quote_char_)) {
+            break;
+          } else {
+            current_char_--;
+          }
+        }
+      }
     }
 
     if (c == '\0') {
@@ -338,7 +392,7 @@ void Lexer::ReadString() {
     }
 
     if (c == '$') {
-      if (num_braces_ < MAX_INTERPOLATION_NESTING) {
+      if (num_interp_braces_ < MAX_INTERPOLATION_NESTING) {
         // TODO: Allow format string.
         // 어떻게 처리하지??
 
@@ -349,7 +403,7 @@ void Lexer::ReadString() {
           LexError("Expect '{' after '$'.");
         }
 
-        braces_[num_braces_++] = 1;
+        interp_braces_[num_interp_braces_++] = 1;
         type = TOKEN_INTERPOLATION;
         break;
       }
@@ -360,6 +414,13 @@ void Lexer::ReadString() {
 
     if (c == '\\') {
       char c2 = NextChar();
+
+      if (read_string_verbatim_) {
+        AppendChar(&string, '\\');
+        AppendChar(&string, c2);
+        continue;
+      }
+
       switch (c2) {
         case '"':
           AppendChar(&string, '"');
@@ -451,17 +512,17 @@ void Lexer::NextToken() {
         return;
 
       case '{':
-        if (num_braces_ > 0) {
-          braces_[num_braces_ - 1]++;
+        if (num_interp_braces_ > 0) {
+          interp_braces_[num_interp_braces_ - 1]++;
         }
         MakeToken(TOKEN_LEFT_BRACE);
         return;
 
       case '}':
-        if (num_braces_ > 0 && --braces_[num_braces_ - 1] == 0) {
+        if (num_interp_braces_ > 0 && --interp_braces_[num_interp_braces_ - 1] == 0) {
           // This is the final "}", so the interpolation expression has ended.
           // This "}" now begins the next section of the template string.
-          num_braces_--;
+          num_interp_braces_--;
           ReadString();
           return;
         }
@@ -566,6 +627,15 @@ void Lexer::NextToken() {
         break;
 
       case '"':
+        PrepareReadString('"', false);
+        ReadString();
+        return;
+      case '\'':
+        PrepareReadString('\'', false);
+        ReadString();
+        return;
+      case '`':
+        PrepareReadString('`', true);
         ReadString();
         return;
 
@@ -625,7 +695,8 @@ void Lexer::LexError(const char* error, ...) {
   vsnprintf_s(buf, 2048 - 1, error, arg_list);
   va_end(arg_list);
 
-  fprintf(stderr, "LEX-ERROR(#%d): %s\n", current.line, buf);
+  fprintf(stderr, "LEX-ERROR(#%d:%d): %s\n", current.line, current.column, buf);
+  fflush(stderr);
 }
 
 std::string Token::TypeName() const {
@@ -776,11 +847,11 @@ std::string Token::ToString() const {
 
   switch (type) {
     case TOKEN_NUMBER:
-    case TOKEN_STRING:
       ret += " : ";
       ret += value.ToString();
       break;
 
+    case TOKEN_STRING:
     case TOKEN_INTERPOLATION:
       ret += " : '";
       ret += value.ToString();

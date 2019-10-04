@@ -139,6 +139,7 @@ struct Token {
   const char* start;
   int length;
   int line;
+  int column;
   Value value;
 
   std::string TypeName() const;
@@ -155,6 +156,8 @@ class Lexer {
   void Init(const char* source, size_t source_length);
 
   bool IsEOF() const;
+  bool IsError() const;
+  bool HasNextToken() const;
 
   char PeekChar() const;
   char PeekNextChar() const;
@@ -171,6 +174,7 @@ class Lexer {
   void ReadName(TokenType type);
   int ReadHexEscape(int digits, const char* tag);
   void ReadUnicodeEscape(std::vector<char>* string, int length);
+  void PrepareReadString(char quote_char, bool force_verbatim);
   void ReadString();
   void NextToken();
   void LexError(const char* error, ...);
@@ -185,14 +189,20 @@ class Lexer {
   const char* token_start_;
   const char* current_char_;
   int current_line_;
+  int current_column_;
+  int tab_size_;
 
   // The maximum depth that interpolation can nest. For example, this string has
   // three levels:
   //
   //      "outside %(one + "%(two + "%(three)")")"
   static const int MAX_INTERPOLATION_NESTING = 8;
-  int braces_[MAX_INTERPOLATION_NESTING];
-  int num_braces_;
+  int interp_braces_[MAX_INTERPOLATION_NESTING];
+  int num_interp_braces_;
+
+  char read_string_quote_char_;
+  int read_string_quote_count_; // 1 or 3
+  bool read_string_verbatim_;
 
   bool skip_new_lines_;
   bool print_errors_;

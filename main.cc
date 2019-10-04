@@ -14,12 +14,16 @@ int main(int argc, char* argv[]) {
   //l.Init("/* /* multi level block comments */ */");
 
   //l.Init("1...100");
+  //l.Init(
+  //  "for (i in 1..<10)\n"
+  //    "print(i)\n"
+  //);
+
   l.Init(
-    "for (i in 1..<10)\n"
-      "print(i)\n"
+    "''Hello world\\n''\n"
   );
 
-  while (l.current.type != TOKEN_EOF) {
+  while (l.HasNextToken()) {
     //printf("%04d> %-12s : %s\n", l.current.line, l.current.TypeName().c_str(),
     //       l.current.value.ToString().c_str());
     printf("%04d>> %s\n", l.current.line, l.current.ToString().c_str());
