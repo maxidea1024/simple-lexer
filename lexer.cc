@@ -1,4 +1,7 @@
 #include "lexer.h"
+#include <stdint.h>
+#include <string.h>
+#include <stdlib.h>
 
 /*
   // A portion of a string literal preceding an interpolated expression. This
@@ -24,32 +27,29 @@ struct Keyword {
 
 // The table of reserved words and their associated token types.
 static Keyword keywords[] = {
-  {"break", 5, TOKEN_BREAK},
-  {"class", 5, TOKEN_CLASS},
-  {"construct", 9, TOKEN_CONSTRUCT},
-  {"else", 4, TOKEN_ELSE},
-  {"false", 5, TOKEN_FALSE},
-  {"for", 3, TOKEN_FOR},
-  {"foreign", 7, TOKEN_FOREIGN},
-  {"if", 2, TOKEN_IF},
-  {"import", 6, TOKEN_IMPORT},
-  {"in", 2, TOKEN_IN},
-  {"is", 2, TOKEN_IS},
-  {"null", 4, TOKEN_NULL},
-  {"return", 6, TOKEN_RETURN},
-  {"static", 6, TOKEN_STATIC},
-  {"super", 5, TOKEN_SUPER},
-  {"this", 4, TOKEN_THIS},
-  {"true", 4, TOKEN_TRUE},
-  {"var", 3, TOKEN_VAR},
-  {"while", 5, TOKEN_WHILE},
-  {NULL, 0, TOKEN_EOF}  // Sentinel to mark the end of the array.
+    {"break", 5, TOKEN_BREAK},
+    {"class", 5, TOKEN_CLASS},
+    {"construct", 9, TOKEN_CONSTRUCT},
+    {"else", 4, TOKEN_ELSE},
+    {"false", 5, TOKEN_FALSE},
+    {"for", 3, TOKEN_FOR},
+    {"foreign", 7, TOKEN_FOREIGN},
+    {"if", 2, TOKEN_IF},
+    {"import", 6, TOKEN_IMPORT},
+    {"in", 2, TOKEN_IN},
+    {"is", 2, TOKEN_IS},
+    {"null", 4, TOKEN_NULL},
+    {"return", 6, TOKEN_RETURN},
+    {"static", 6, TOKEN_STATIC},
+    {"super", 5, TOKEN_SUPER},
+    {"this", 4, TOKEN_THIS},
+    {"true", 4, TOKEN_TRUE},
+    {"var", 3, TOKEN_VAR},
+    {"while", 5, TOKEN_WHILE},
+    {NULL, 0, TOKEN_EOF}  // Sentinel to mark the end of the array.
 };
 
-
-Lexer::Lexer() {
-  Init("", 0);
-}
+Lexer::Lexer() { Init("", 0); }
 
 Lexer::Lexer(const char* source, int source_length) {
   Init(source, source_length);
@@ -199,8 +199,7 @@ void Lexer::MakeNumber(bool hex) {
   errno = 0;
 
   if (hex) {
-    current.value =
-        NUM_VAL((double)strtoll(token_start_, NULL, 16));
+    current.value = NUM_VAL((double)strtoll(token_start_, NULL, 16));
   } else {
     current.value = NUM_VAL(strtod(token_start_, NULL));
   }
@@ -229,7 +228,7 @@ void Lexer::ReadHexNumber() {
 }
 
 void Lexer::ReadNumber() {
-  if (IsDigit(PeekChar()) {
+  if (IsDigit(PeekChar())) {
     NextChar();
   }
 
@@ -342,10 +341,10 @@ void Lexer::ReadString() {
         // TODO: Allow format string.
         // 어떻게 처리하지??
 
-        //C#은 다음과 같음
+        // C#은 다음과 같음
         //   {<interpolationExpression>[,<alignment>][:<formatString>]}
 
-        if (Next() != '{') {
+        if (NextChar() != '{') {
           LexError("Expect '{' after '%'.");
         }
 
@@ -401,21 +400,18 @@ void Lexer::ReadString() {
           ByteBufferWrite(vm, &string, '\v');
           break;
         case 'x':
-          ByteBufferWrite(vm, &string,
-                          (uint8_t)ReadHexEscape(2, "byte"));
+          ByteBufferWrite(vm, &string, (uint8_t)ReadHexEscape(2, "byte"));
           break;
 
         default:
-          LexError("Invalid escape character '%c'.",
-                   *(current_char_ - 1));
+          LexError("Invalid escape character '%c'.", *(current_char_ - 1));
           break;
       }
     } else {
       ByteBufferWrite(vm, &string, c);
     }
 
-    current.value =
-        NewStringLength(vm, (char*)string.data, string.count);
+    current.value = NewStringLength(vm, (char*)string.data, string.count);
 
     ByteBufferClear(vm, &string);
     MakeToken(type);
@@ -451,13 +447,12 @@ void Lexer::NextToken() {
 
       case '{':
         if (num_braces_ > 0) {
-          braces_[num_braces_-1]++;
+          braces_[num_braces_ - 1]++;
         }
         MakeToken(TOKEN_LEFT_BRACE);
         return;
       case '}':
-        if (num_braces_ > 0 &&
-            --braces_[num_braces_-1] == 0) {
+        if (num_braces_ > 0 && --braces_[num_braces_ - 1] == 0) {
           // This is the final ")", so the interpolation expression has ended.
           // This ")" now begins the next section of the template string.
           num_braces_--;
@@ -555,8 +550,7 @@ void Lexer::NextToken() {
       case '\r':
       case '\t':
         // Skip forward until we run out of whitespace.
-        while (PeekChar() == ' ' || PeekChar() == '\r' ||
-               PeekChar() == '\t') {
+        while (PeekChar() == ' ' || PeekChar() == '\r' || PeekChar() == '\t') {
           NextChar();
         }
         break;
@@ -610,5 +604,5 @@ void Lexer::NextToken() {
 }
 
 void Lexer::LexError(const char* error, ...) {
-  //TODO
+  // TODO
 }

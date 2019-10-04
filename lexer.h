@@ -110,12 +110,12 @@ class Lexer {
   void TwoCharToken(char c, TokenType two, TokenType one);
   void SkipLineComment();
   void SkipBlockComment();
-  int  ReadHexDigit();
+  int ReadHexDigit();
   void MakeNumber(bool hex);
   void ReadHexNumber();
   void ReadNumber();
   void ReadName(TokenType type);
-  int  ReadHexEscape(int digits, const char* tag);
+  int ReadHexEscape(int digits, const char* tag);
   void ReadUnicodeEscape(ByteBuffer* string, int length);
   void ReadString();
   void NextToken();
@@ -138,7 +138,7 @@ class Lexer {
   //      "outside %(one + "%(two + "%(three)")")"
   static const int MAX_INTERPOLATION_NESTING = 8;
   int braces_[MAX_INTERPOLATION_NESTING];
-  int numBraces_;
+  int num_braces_;
 
   bool skip_new_lines_;
   bool print_errors_;
