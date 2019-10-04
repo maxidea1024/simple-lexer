@@ -1,3 +1,7 @@
+// {} : braces
+// [] : brackets
+// () : parenthesis
+
 /*
   // A portion of a string literal preceding an interpolated expression. This
   // string:
@@ -125,8 +129,8 @@ struct Lexer {
   Token current;
   Token previous;
 
-  int parens[MAX_INTERPOLATION_NESTING];
-  int numParens;
+  int braces[MAX_INTERPOLATION_NESTING];
+  int numBraces;
 
   bool skip_new_lines;
   bool print_errors;
@@ -141,129 +145,129 @@ struct Keyword {
 
 // The table of reserved words and their associated token types.
 static Keyword keywords[] = {
-    {"break", 5, TOKEN_BREAK},
-    {"class", 5, TOKEN_CLASS},
-    {"construct", 9, TOKEN_CONSTRUCT},
-    {"else", 4, TOKEN_ELSE},
-    {"false", 5, TOKEN_FALSE},
-    {"for", 3, TOKEN_FOR},
-    {"foreign", 7, TOKEN_FOREIGN},
-    {"if", 2, TOKEN_IF},
-    {"import", 6, TOKEN_IMPORT},
-    {"in", 2, TOKEN_IN},
-    {"is", 2, TOKEN_IS},
-    {"null", 4, TOKEN_NULL},
-    {"return", 6, TOKEN_RETURN},
-    {"static", 6, TOKEN_STATIC},
-    {"super", 5, TOKEN_SUPER},
-    {"this", 4, TOKEN_THIS},
-    {"true", 4, TOKEN_TRUE},
-    {"var", 3, TOKEN_VAR},
-    {"while", 5, TOKEN_WHILE},
-    {NULL, 0, TOKEN_EOF}  // Sentinel to mark the end of the array.
+  {"break", 5, TOKEN_BREAK},
+  {"class", 5, TOKEN_CLASS},
+  {"construct", 9, TOKEN_CONSTRUCT},
+  {"else", 4, TOKEN_ELSE},
+  {"false", 5, TOKEN_FALSE},
+  {"for", 3, TOKEN_FOR},
+  {"foreign", 7, TOKEN_FOREIGN},
+  {"if", 2, TOKEN_IF},
+  {"import", 6, TOKEN_IMPORT},
+  {"in", 2, TOKEN_IN},
+  {"is", 2, TOKEN_IS},
+  {"null", 4, TOKEN_NULL},
+  {"return", 6, TOKEN_RETURN},
+  {"static", 6, TOKEN_STATIC},
+  {"super", 5, TOKEN_SUPER},
+  {"this", 4, TOKEN_THIS},
+  {"true", 4, TOKEN_TRUE},
+  {"var", 3, TOKEN_VAR},
+  {"while", 5, TOKEN_WHILE},
+  {NULL, 0, TOKEN_EOF}  // Sentinel to mark the end of the array.
 };
 
 // Returns true if [c] is a valid (non-initial) identifier character.
-bool IsName(char c) {
+inline bool IsName(char c) {
   return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
 }
 
 // Returns true if [c] is a digit.
-bool IsDigit(char c) { return c >= '0' && c <= '9'; }
+inline bool IsDigit(char c) { return c >= '0' && c <= '9'; }
 
-// Returns the current character the parser is sitting on.
-char PeekChar(Parser* parser) { return *parser->currentChar; }
+// Returns the current character the lexer is sitting on.
+char Lexer::PeekChar(Lexer* lexer) { return *lexer->currentChar; }
 
 // Returns the character after the current character.
-char PeekNextChar(Parser* parser) {
+char Lexer::PeekNextChar(Lexer* lexer) {
   // If we're at the end of the source, don't read past it.
-  if (PeekChar(parser) == '\0') {
+  if (PeekChar(lexer) == '\0') {
     return '\0';
   }
 
-  return *(parser->currentChar + 1);
+  return *(lexer->currentChar + 1);
 }
 
-// Advances the parser forward one character.
-char NextChar(Parser* parser) {
-  char c = PeekChar(parser);
-  parser->currentChar++;
+// Advances the lexer forward one character.
+char Lexer::NextChar(Lexer* lexer) {
+  char c = PeekChar(lexer);
+  lexer->currentChar++;
   if (c == '\n') {
-    parser->currentLine++;
+    lexer->currentLine++;
   }
 
   return c;
 }
 
 // If the current character is [c], consumes it and returns `true`.
-bool MatchChar(Parser* parser, char c) {
-  if (PeekChar(parser) != c) {
+bool Lexer::MatchChar(Lexer* lexer, char c) {
+  if (PeekChar(lexer) != c) {
     return false;
   }
 
-  NextChar(parser);
+  NextChar(lexer);
   return true;
 }
 
-// Sets the parser's current token to the given [type] and current character
+// Sets the lexer's current token to the given [type] and current character
 // range.
-void MakeToken(Parser* parser, TokenType type) {
-  parser->current.type = type;
-  parser->current.start = parser->tokenStart;
-  parser->current.length = (int)(parser->currentChar - parser->tokenStart);
-  parser->current.line = parser->currentLine;
+void Lexer::MakeToken(Lexer* lexer, TokenType type) {
+  lexer->current.type = type;
+  lexer->current.start = lexer->tokenStart;
+  lexer->current.length = (int)(lexer->currentChar - lexer->tokenStart);
+  lexer->current.line = lexer->currentLine;
 
   // Make line tokens appear on the line containing the "\n".
   if (type == TOKEN_LINE) {
-    parser->current.line--;
+    lexer->current.line--;
   }
 }
 
 // If the current character is [c], then consumes it and makes a token of type
 // [two]. Otherwise makes a token of type [one].
-void TwoCharToken(Parser* parser, char c, TokenType two, TokenType one) {
-  MakeToken(parser, MatchChar(parser, c) ? two : one);
+void Lexer::TwoCharToken(Lexer* lexer, char c, TokenType two, TokenType one) {
+  MakeToken(lexer, MatchChar(lexer, c) ? two : one);
 }
 
 // Skips the rest of the current line.
-void SkipLineComment(Parser* parser) {
-  while (PeekChar(parser) != '\n' && PeekChar(parser) != '\0') {
-    NextChar(parser);
+void Lexer::SkipLineComment(Lexer* lexer) {
+  while (PeekChar(lexer) != '\n' && PeekChar(lexer) != '\0') {
+    NextChar(lexer);
   }
 }
 
 // Skips the rest of a block comment.
-void SkipBlockComment(Parser* parser) {
+void Lexer::SkipBlockComment(Lexer* lexer) {
   int nesting = 1;
   while (nesting > 0) {
-    if (PeekChar(parser) == '\0') {
-      LexError(parser, "Unterminated block comment.");
+    if (PeekChar(lexer) == '\0') {
+      LexError(lexer, "Unterminated block comment.");
       return;
     }
 
-    if (PeekChar(parser) == '/' && PeekNextChar(parser) == '*') {
-      NextChar(parser);
-      NextChar(parser);
+    if (PeekChar(lexer) == '/' && PeekNextChar(lexer) == '*') {
+      NextChar(lexer);
+      NextChar(lexer);
       nesting++;
       continue;
     }
 
-    if (PeekChar(parser) == '*' && PeekNextChar(parser) == '/') {
-      NextChar(parser);
-      NextChar(parser);
+    if (PeekChar(lexer) == '*' && PeekNextChar(lexer) == '/') {
+      NextChar(lexer);
+      NextChar(lexer);
       nesting--;
       continue;
     }
 
     // Regular comment characters.
-    NextChar(parser);
+    NextChar(lexer);
   }
 }
 
 // Reads the next character, which should be a hex digit (0-9, a-f, or A-F) and
 // returns its numeric value. If the character isn't a hex digit, returns -1.
-int ReadHexDigit(Parser* parser) {
-  char c = NextChar(parser);
+int Lexer::ReadHexDigit(Lexer* lexer) {
+  char c = NextChar(lexer);
 
   if (c >= '0' && c <= '9') {
     return c - '0';
@@ -279,110 +283,110 @@ int ReadHexDigit(Parser* parser) {
 
   // Don't consume it if it isn't expected. Keeps us from reading past the end
   // of an unterminated string.
-  parser->currentChar--;
+  lexer->currentChar--;
   return -1;
 }
 
-void MakeNumber(Parser* parser, bool hex) {
+void Lexer::MakeNumber(Lexer* lexer, bool hex) {
   errno = 0;
 
   if (hex) {
-    parser->current.value =
-        NUM_VAL((double)strtoll(parser->tokenStart, NULL, 16));
+    lexer->current.value =
+        NUM_VAL((double)strtoll(lexer->tokenStart, NULL, 16));
   } else {
-    parser->current.value = NUM_VAL(strtod(parser->tokenStart, NULL));
+    lexer->current.value = NUM_VAL(strtod(lexer->tokenStart, NULL));
   }
 
   if (errno == ERANGE) {
-    LexError(parser, "Number literal was too large (%d).", sizeof(long int));
-    parser->current.value = NUM_VAL(0);
+    LexError(lexer, "Number literal was too large (%d).", sizeof(long int));
+    lexer->current.value = NUM_VAL(0);
   }
 
   // We don't check that the entire token is consumed after calling strtoll()
   // or strtod() because we've already scanned it ourselves and know it's valid.
 
-  MakeToken(parser, TOKEN_NUMBER);
+  MakeToken(lexer, TOKEN_NUMBER);
 }
 
-void ReadHexNumber(Parser* parser) {
+void Lexer::ReadHexNumber(Lexer* lexer) {
   // Skip past the `x` used to denote a hexadecimal literal.
-  NextChar(parser);
+  NextChar(lexer);
 
   // Iterate over all the valid hexadecimal digits found.
-  while (ReadHexDigit(parser) != -1) {
+  while (ReadHexDigit(lexer) != -1) {
     continue;
   }
 
-  MakeNumber(parser, true);
+  MakeNumber(lexer, true);
 }
 
-void ReadNumber(Parser* parser) {
-  if (IsDigit(PeekChar(parser)) {
-    NextChar(parser);
+void Lexer::ReadNumber(Lexer* lexer) {
+  if (IsDigit(PeekChar(lexer)) {
+    NextChar(lexer);
   }
 
   // See if it has a floating point. Make sure there is a digit after the "."
   // so we don't get confused by method calls on number literals.
-  if (PeekChar(parser) == '.' && IsDigit(PeekNextChar(parser))) {
-    NextChar(parser);
-    while (IsDigit(PeekChar(parser))) {
-      NextChar(parser);
+  if (PeekChar(lexer) == '.' && IsDigit(PeekNextChar(lexer))) {
+    NextChar(lexer);
+    while (IsDigit(PeekChar(lexer))) {
+      NextChar(lexer);
     }
   }
 
   // See if the number is in scientific notation.
-  if (MatchChar(parser, 'e') || MatchChar(parser, 'E')) {
+  if (MatchChar(lexer, 'e') || MatchChar(lexer, 'E')) {
     // Allow a negative exponent.
-    MatchChar(parser, '-');
+    MatchChar(lexer, '-');
 
-    if (!IsDigit(PeekChar(parser))) {
-      LexError(parser, "Unterminated scientific notation.");
+    if (!IsDigit(PeekChar(lexer))) {
+      LexError(lexer, "Unterminated scientific notation.");
     }
 
-    while (IsDigit(PeekChar(parser))) {
-      NextChar(parser);
+    while (IsDigit(PeekChar(lexer))) {
+      NextChar(lexer);
     }
   }
 
-  MakeNumber(parser, false);
+  MakeNumber(lexer, false);
 }
 
 // Finishes lexing an identifier. Handles reserved words.
-void ReadName(Parser* parser, TokenType type) {
-  while (IsName(PeekChar(parser)) || IsDigit(PeekChar(parser))) {
-    NextChar(parser);
+void Lexer::ReadName(Lexer* lexer, TokenType type) {
+  while (IsName(PeekChar(lexer)) || IsDigit(PeekChar(lexer))) {
+    NextChar(lexer);
   }
 
   // Update the type if it's a keyword.
-  size_t length = parser->currentChar - parser->tokenStart;
+  size_t length = lexer->currentChar - lexer->tokenStart;
   for (int i = 0; keywords[i].identifier != nullptr; ++i) {
     if (length == keywords[i].length &&
-        memcmp(parser->tokenStart, keywords[i].identifier, length) == 0) {
+        memcmp(lexer->tokenStart, keywords[i].identifier, length) == 0) {
       type = keywords[i].tokenType;
       break;
     }
   }
 
-  MakeToken(parser, type);
+  MakeToken(lexer, type);
 }
 
 // Reads [digits] hex digits in a string literal and returns their number value.
-int ReadHexEscape(Parser* parser, int digits, const char* description) {
+int Lexer::ReadHexEscape(Lexer* lexer, int digits, const char* tag) {
   int value = 0;
 
   for (int i = 0; i < digits; ++i) {
-    if (PeekChar(parser) == '"' || PeekChar(parser) == '\0') {
-      LexError(parser, "Incomplete %s escape sequence.", description);
+    if (PeekChar(lexer) == '"' || PeekChar(lexer) == '\0') {
+      LexError(lexer, "Incomplete %s escape sequence.", tag);
 
       // Don't consume it if it isn't expected. Keeps us from reading past the
       // end of an unterminated string.
-      parser->currentChar--;
+      lexer->currentChar--;
       break;
     }
 
-    int digit = ReadHexDigit(parser);
+    int digit = ReadHexDigit(lexer);
     if (digit == -1) {
-      LexError(parser, "Invalid %s escape sequence.", description);
+      LexError(lexer, "Invalid %s escape sequence.", tag);
       break;
     }
 
@@ -393,46 +397,51 @@ int ReadHexEscape(Parser* parser, int digits, const char* description) {
 }
 
 // Reads a hex digit Unicode escape sequence in a string literal.
-void ReadUnicodeEscape(Parser* parser, ByteBuffer* string, int length) {
-  int value = ReadHexEscape(parser, length, "Unicode");
+void Lexer::ReadUnicodeEscape(Lexer* lexer, ByteBuffer* string, int length) {
+  int value = ReadHexEscape(lexer, length, "Unicode");
 
   // Grow the buffer enough for the encoded result.
   int num_bytes = Utf8EncodeNumBytes(value);
   if (num_bytes > 0) {
-    ByteBufferFill(parser->vm, string, 0, num_bytes);
+    ByteBufferFill(lexer->vm, string, 0, num_bytes);
     Utf8Encode(value, string->data + string->count - num_bytes);
   }
 }
 
 // Finishes lexing a string literal.
-void ReadString(Parser* parser) {
+void Lexer::ReadString(Lexer* lexer) {
   ByteBuffer string;
   TokenType type = TOKEN_STRING;
   ByteBufferInit(&string);
 
   for (;;) {
-    char c = NextChar(parser);
+    char c = NextChar(lexer);
     if (c == '"') {
       break;
     }
 
     if (c == '\0') {
-      LexError(parser, "Unterminated string.");
+      LexError(lexer, "Unterminated string.");
 
       // Don't consume it if it isn't expected. Keeps us from reading past the
       // end of an unterminated string.
-      parser->currentChar--;
+      lexer->currentChar--;
       break;
     }
 
-    if (c == '%') {
-      if (parser->numParens < MAX_INTERPOLATION_NESTING) {
+    if (c == '$') {
+      if (lexer->numBraces < MAX_INTERPOLATION_NESTING) {
         // TODO: Allow format string.
-        if (Next(parser) != '(') {
-          LexError(parser, "Expect '(' after '%'.");
+        // 어떻게 처리하지??
+
+        //C#은 다음과 같음
+        //   {<interpolationExpression>[,<alignment>][:<formatString>]}
+
+        if (Next(lexer) != '{') {
+          LexError(lexer, "Expect '{' after '%'.");
         }
 
-        parser->parens[parser->numParens++] = 1;
+        lexer->braces[lexer->numBraces++] = 1;
         type = TOKEN_INTERPOLATION;
         break;
       }
@@ -442,245 +451,246 @@ void ReadString(Parser* parser) {
     }
 
     if (c == '\\') {
-      char c2 = NextChar(parser);
+      char c2 = NextChar(lexer);
       switch (c2) {
         case '"':
-          ByteBufferWrite(parser->vm, &string, '"');
+          ByteBufferWrite(lexer->vm, &string, '"');
           break;
         case '\\':
-          ByteBufferWrite(parser->vm, &string, '\\');
+          ByteBufferWrite(lexer->vm, &string, '\\');
           break;
         case '%':
-          ByteBufferWrite(parser->vm, &string, '%');
+          ByteBufferWrite(lexer->vm, &string, '%');
           break;
         case '0':
-          ByteBufferWrite(parser->vm, &string, '\0');
+          ByteBufferWrite(lexer->vm, &string, '\0');
           break;
         case 'a':
-          ByteBufferWrite(parser->vm, &string, '\a');
+          ByteBufferWrite(lexer->vm, &string, '\a');
           break;
         case 'b':
-          ByteBufferWrite(parser->vm, &string, '\b');
+          ByteBufferWrite(lexer->vm, &string, '\b');
           break;
         case 'f':
-          ByteBufferWrite(parser->vm, &string, '\f');
+          ByteBufferWrite(lexer->vm, &string, '\f');
           break;
         case 'n':
-          ByteBufferWrite(parser->vm, &string, '\n');
+          ByteBufferWrite(lexer->vm, &string, '\n');
           break;
         case 'r':
-          ByteBufferWrite(parser->vm, &string, '\r');
+          ByteBufferWrite(lexer->vm, &string, '\r');
           break;
         case 't':
-          ByteBufferWrite(parser->vm, &string, '\t');
+          ByteBufferWrite(lexer->vm, &string, '\t');
           break;
         case 'u':
-          ReadUnicodeEscape(parser, &string, 4);
+          ReadUnicodeEscape(lexer, &string, 4);
           break;
         case 'U':
-          ReadUnicodeEscape(parser, &string, 8);
+          ReadUnicodeEscape(lexer, &string, 8);
           break;
         case 'v':
-          ByteBufferWrite(parser->vm, &string, '\v');
+          ByteBufferWrite(lexer->vm, &string, '\v');
           break;
         case 'x':
-          ByteBufferWrite(parser->vm, &string,
-                          (uint8_t)ReadHexEscape(parser, 2, "byte"));
+          ByteBufferWrite(lexer->vm, &string,
+                          (uint8_t)ReadHexEscape(lexer, 2, "byte"));
           break;
 
         default:
-          LexError(parser, "Invalid escape character '%c'.",
-                   *(parser->currentChar - 1));
+          LexError(lexer, "Invalid escape character '%c'.",
+                   *(lexer->currentChar - 1));
           break;
       }
     } else {
-      ByteBufferWrite(parser->vm, &string, c);
+      ByteBufferWrite(lexer->vm, &string, c);
     }
 
-    parser->current.value =
-        NewStringLength(parser->vm, (char*)string.data, string.count);
+    lexer->current.value =
+        NewStringLength(lexer->vm, (char*)string.data, string.count);
 
-    ByteBufferClear(parser->vm, &string);
-    MakeToken(parser, type);
+    ByteBufferClear(lexer->vm, &string);
+    MakeToken(lexer, type);
   }
 }
 
-static void NextToken(Parser* parser) {
-  parser->previous = parser->current;
+void Lexer::NextToken(Lexer* lexer) {
+  lexer->previous = lexer->current;
 
-  if (parser->current.type == TOKEN_EOF) {
+  if (lexer->current.type == TOKEN_EOF) {
     return;
   }
 
-  while (PeekChar(parser) != '\0') {
-    parser->tokenStart = parser->currentChar;
+  while (PeekChar(lexer) != '\0') {
+    lexer->tokenStart = lexer->currentChar;
 
-    char c = NextChar(parser);
+    char c = NextChar(lexer);
     switch (c) {
       case '(':
-        if (parser->numParens > 0) {
-          parser->parens[parser->numParans - 1]++;
-        }
-        MakeToken(parser, TOKEN_LEFT_PAREN);
+        MakeToken(lexer, TOKEN_LEFT_PAREN);
         return;
 
       case ')':
-        if (parser->numParans > 0 &&
-            --parser->parens[parser->numParans - 1] == 0) {
-          // This is the final ")", so the interpolation expression has ended.
-          // This ")" now begins the next section of the template string.
-          parser->numParens--;
-          ReadString(parser);
-          return;
-        }
-
-        MakeToken(parser, TOKEN_RIGHT_PAREN);
+        MakeToken(lexer, TOKEN_RIGHT_PAREN);
         return;
 
       case '[':
-        MakeToken(parser, TOKEN_LEFT_BRACKET);
+        MakeToken(lexer, TOKEN_LEFT_BRACKET);
         return;
       case ']':
-        MakeToken(parser, TOKEN_RIGHT_BRACKET);
+        MakeToken(lexer, TOKEN_RIGHT_BRACKET);
         return;
+
       case '{':
-        MakeToken(parser, TOKEN_LEFT_BRACE);
+        if (lexer->numBraces > 0) {
+          lexer->braces[lexer->numBraces-1]++;
+        }
+        MakeToken(lexer, TOKEN_LEFT_BRACE);
         return;
       case '}':
-        MakeToken(parser, TOKEN_RIGHT_BRACE);
+        if (lexer->numBraces > 0 &&
+            --lexer->braces[lexer->numBraces-1] == 0) {
+          // This is the final ")", so the interpolation expression has ended.
+          // This ")" now begins the next section of the template string.
+          lexer->numBraces--;
+          ReadString(lexer);
+          return;
+        }
+        MakeToken(lexer, TOKEN_RIGHT_BRACE);
         return;
+
       case ':':
-        MakeToken(parser, TOKEN_COLON);
+        MakeToken(lexer, TOKEN_COLON);
         return;
       case ',':
-        MakeToken(parser, TOKEN_COMMA);
+        MakeToken(lexer, TOKEN_COMMA);
         return;
       case '*':
-        MakeToken(parser, TOKEN_STAR);
+        MakeToken(lexer, TOKEN_STAR);
         return;
       case '%':
-        MakeToken(parser, TOKEN_PERCENT);
+        MakeToken(lexer, TOKEN_PERCENT);
         return;
       case '^':
-        MakeToken(parser, TOKEN_CARET);
+        MakeToken(lexer, TOKEN_CARET);
         return;
       case '+':
-        MakeToken(parser, TOKEN_PLUS);
+        MakeToken(lexer, TOKEN_PLUS);
         return;
       case '-':
-        MakeToken(parser, TOKEN_MINUS);
+        MakeToken(lexer, TOKEN_MINUS);
         return;
       case '~':
-        MakeToken(parser, TOKEN_TILDE);
+        MakeToken(lexer, TOKEN_TILDE);
         return;
       case '?':
-        MakeToken(parser, TOKEN_QUESTION);
+        MakeToken(lexer, TOKEN_QUESTION);
         return;
 
       case '|':
-        TwoCharToken(parser, '|', TOKEN_PIPEPIPE, TOKEN_PIPE);
+        TwoCharToken(lexer, '|', TOKEN_PIPEPIPE, TOKEN_PIPE);
         return;
       case '&':
-        TwoCharToken(parser, '&', TOKEN_AMPAMP, TOKEN_AMP);
+        TwoCharToken(lexer, '&', TOKEN_AMPAMP, TOKEN_AMP);
         return;
       case '=':
-        TwoCharToken(parser, '=', TOKEN_EQEQ, TOKEN_EQ);
+        TwoCharToken(lexer, '=', TOKEN_EQEQ, TOKEN_EQ);
         return;
       case '!':
-        TwoCharToken(parser, '=', TOKEN_BANGEQ, TOKEN_BANG);
+        TwoCharToken(lexer, '=', TOKEN_BANGEQ, TOKEN_BANG);
         return;
 
       case '.':
-        if (MatchChar(parser, '.')) {
-          TwoCharToken(parser, '.', TOKEN_DOTDOTDOT, TOKEN_DOTDOT);
+        if (MatchChar(lexer, '.')) {
+          TwoCharToken(lexer, '.', TOKEN_DOTDOTDOT, TOKEN_DOTDOT);
           return;
         }
 
-        MakeToken(parser, TOKEN_DOT);
+        MakeToken(lexer, TOKEN_DOT);
         return;
 
       case '/':
-        if (MatchChar(parser, '/')) {
-          SkipLineComment(parser);
+        if (MatchChar(lexer, '/')) {
+          SkipLineComment(lexer);
           break;
         }
 
-        if (MatchChar(parser, '*')) {
-          SkipBlockComment(parser);
+        if (MatchChar(lexer, '*')) {
+          SkipBlockComment(lexer);
           break;
         }
 
-        MakeToken(parser, TOKEN_SLASH);
+        MakeToken(lexer, TOKEN_SLASH);
         return;
 
       case '<':
-        if (MatchChar(parser, '<')) {
-          MakeToken(parser, TOKEN_LTLT);
+        if (MatchChar(lexer, '<')) {
+          MakeToken(lexer, TOKEN_LTLT);
         } else {
-          TwoCharToken(parser, '=', TOKEN_LTEQ, TOKEN_LT);
+          TwoCharToken(lexer, '=', TOKEN_LTEQ, TOKEN_LT);
         }
         return;
 
       case '>':
-        if (MatchChar(parser, '>')) {
-          MakeToken(parser, TOKEN_GTGT);
+        if (MatchChar(lexer, '>')) {
+          MakeToken(lexer, TOKEN_GTGT);
         } else {
-          TwoCharToken(parser, '=', TOKEN_GTEQ, TOKEN_GT);
+          TwoCharToken(lexer, '=', TOKEN_GTEQ, TOKEN_GT);
         }
         return;
 
       case '\n':
-        MakeToken(parser, TOKEN_LINE);
+        MakeToken(lexer, TOKEN_LINE);
         return;
 
       case ' ':
       case '\r':
       case '\t':
         // Skip forward until we run out of whitespace.
-        while (PeekChar(parser) == ' ' || PeekChar(parser) == '\r' ||
-               PeekChar(parser) == '\t') {
-          NextChar(parser);
+        while (PeekChar(lexer) == ' ' || PeekChar(lexer) == '\r' ||
+               PeekChar(lexer) == '\t') {
+          NextChar(lexer);
         }
         break;
 
       case '"':
-        ReadString(parser);
+        ReadString(lexer);
         return;
 
       case '_':
-        ReadName(parser,
-                 PeekChar(parser) == '_' ? TOKEN_STATIC_FIELD : TOKEN_FIELD);
+        ReadName(lexer,
+                 PeekChar(lexer) == '_' ? TOKEN_STATIC_FIELD : TOKEN_FIELD);
         return;
 
       case '0':
-        if (PeekChar(parser) == 'x') {
-          ReadHexNumber(parser);
+        if (PeekChar(lexer) == 'x') {
+          ReadHexNumber(lexer);
           return;
         }
 
-        ReadNumber(parser);
+        ReadNumber(lexer);
         return;
 
       default:
-        if (parser->currentLine == 1 && c == '#' && PeekChar(parser) == '!') {
+        if (lexer->currentLine == 1 && c == '#' && PeekChar(lexer) == '!') {
           // Ignore shebang on the first line.
-          SkipLineComment(parser);
+          SkipLineComment(lexer);
           break;
         }
 
         if (IsName(c)) {
-          ReadName(parser, TOKEN_NAME);
+          ReadName(lexer, TOKEN_NAME);
         } else if (IsDigit(c)) {
-          ReadNumber(parser);
+          ReadNumber(lexer);
         } else {
           if (c >= 32 && c <= 126) {
-            LexError(parser, "Invalid character '%c'.", c);
+            LexError(lexer, "Invalid character '%c'.", c);
           } else {
-            LexError(parser, "Invalid byte 0x%x.", (uint8_t)c);
+            LexError(lexer, "Invalid byte 0x%x.", (uint8_t)c);
           }
 
-          parser->current.type = TOKEN_ERROR;
-          parser->current.length = 0;
+          lexer->current.type = TOKEN_ERROR;
+          lexer->current.length = 0;
         }
 
         return;
@@ -688,15 +698,18 @@ static void NextToken(Parser* parser) {
   }
 
   // If we get here, we're out of source, so just make EOF tokens.
-  parser->tokenStart = parser->currentChar;
-  MakeToken(parser, TOKEN_EOF);
+  lexer->tokenStart = lexer->currentChar;
+  MakeToken(lexer, TOKEN_EOF);
 }
 
+
+
+/*
 // Parsing --------------------------------------------------------------------
 
 // Returns the type of the current token.
 TokenType Peek(Compiler* compiler) {
-  return compiler->parser->current.type;
+  return compiler->lexer->current.type;
 }
 
 // Consumes the current token if its type is [expected]. Returns true if a
@@ -706,22 +719,22 @@ bool Match(Compiler* compiler, TokenType expected) {
     return false;
   }
 
-  NextToken(compiler->parser);
+  NextToken(compiler->lexer);
   return true;
 }
 
 // Consumes the current token. Emits an error if its type is not [expected].
 void Consume(Compiler* compiler, TokenType expected,
              const char* error_message) {
-  NextToken(compiler->parser);
+  NextToken(compiler->lexer);
 
-  if (compiler->parser->previous.type != expected) {
+  if (compiler->lexer->previous.type != expected) {
     Error(compiler, error_message);
 
     // If the next token is the one we want, assume the current one is just a
     // spurious error and discard it to minimize the number of cascaded errors.
-    if (compiler->parser->current.type == expected) {
-      NextToken(compiler->parser);
+    if (compiler->lexer->current.type == expected) {
+      NextToken(compiler->lexer);
     }
   }
 }
@@ -747,4 +760,59 @@ void IgnoreNewLines(Compiler* compiler) {
 void ConsumeLine(Compiler* compiler, const char* error_message) {
   Consume(compiler, TOKEN_LINE, error_message);
   IgnoreNewLines(compiler);
+}
+*/
+
+
+
+void Lexer::Init(const char* source) {
+  this->source = source;
+  this->tokenStart = source;
+  this->currentChar = source;
+  this->currentLine = 1;
+  this->numBraces = 0;
+
+  this->current.type = TOKEN_ERROR;
+  this->current.start = source;
+  this->current.length = 0;
+  this->current.line = UNDEFINED_VAL;
+
+  // Ignore leading newlines.
+  this->skip_new_lines = true;
+  this->print_errors = true;
+
+  // Read the first token.
+  NextToken();
+}
+
+
+
+
+
+
+//TODO: 내부적으로 string builder를 지원해야 효율적으로 지원이 가능해보임.
+void StringInterpolation(Compiler* compiler, bool can_assign) {
+  LoadCoreVariable(compiler, "List");
+  CallMethod(compiler, 0, "new()", 5);
+
+  do {
+    // The opening starting part.
+    Literal(compiler, false);
+    CallMethod(compiler, 1, "addCore_(_)", 11);
+
+    // The interpolated expression.
+    IgnoreNewLines(compiler);
+    Expression(compression);
+    CallMethod(compiler, 1, "addCore_(_)", 11);
+
+    IgnoreNewLines(compiler);
+  } while (Match(compiler, TOKEN_INTERPOLATION));
+
+  // The trailing string part.
+  Consume(compiler, TOKEN_STRING, "Expect end of string interpolation.");
+  Literal(compiler, false);
+  CallMethod(compiler, 1, "addCore_(_)", 11);
+
+  // The list of interpolated parts.
+  callMethod(compiler, 0, "join()", 6);
 }

@@ -519,14 +519,14 @@ static void NextToken(Parser* parser) {
     switch (c) {
       case '(':
         if (parser->numParens > 0) {
-          parser->parens[parser->numParans - 1]++;
+          parser->parens[parser->numParens - 1]++;
         }
         MakeToken(parser, TOKEN_LEFT_PAREN);
         return;
 
       case ')':
-        if (parser->numParans > 0 &&
-            --parser->parens[parser->numParans - 1] == 0) {
+        if (parser->numParens > 0 &&
+            --parser->parens[parser->numParens - 1] == 0) {
           // This is the final ")", so the interpolation expression has ended.
           // This ")" now begins the next section of the template string.
           parser->numParens--;
