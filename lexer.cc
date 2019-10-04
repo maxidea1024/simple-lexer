@@ -69,7 +69,7 @@ void Lexer::Init(const char* source, int source_length) {
   current.start = source;
   current.length = 0;
   current.line = 0;
-  current.value = UNDEFINED_VAL;
+  current.value = Value::NONE;
 
   // Ignore leading newlines.
   skip_new_lines_ = true;
@@ -203,14 +203,14 @@ void Lexer::MakeNumber(bool hex) {
   errno = 0;
 
   if (hex) {
-    current.value = NUM_VAL((double)strtoll(token_start_, NULL, 16));
+    current.value = Value((double)strtoll(token_start_, NULL, 16));
   } else {
-    current.value = NUM_VAL(strtod(token_start_, NULL));
+    current.value = Value(strtod(token_start_, NULL));
   }
 
   if (errno == ERANGE) {
     LexError("Number literal was too large (%d).", sizeof(long int));
-    current.value = NUM_VAL(0);
+    current.value = Value((int64_t)0);
   }
 
   // We don't check that the entire token is consumed after calling strtoll()
