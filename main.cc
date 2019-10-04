@@ -11,7 +11,13 @@ int main(int argc, char* argv[]) {
   //);
   // l.Init("true false if while var val yield resume");
 
-  l.Init("/* /* multi level block comments */ */");
+  //l.Init("/* /* multi level block comments */ */");
+
+  //l.Init("1...100");
+  l.Init(
+    "for (i in 1..<10)\n"
+      "print(i)\n"
+  );
 
   while (l.current.type != TOKEN_EOF) {
     //printf("%04d> %-12s : %s\n", l.current.line, l.current.TypeName().c_str(),

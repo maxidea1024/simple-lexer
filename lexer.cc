@@ -511,7 +511,7 @@ void Lexer::NextToken() {
 
       case '.':
         if (MatchChar('.')) {
-          if (PeekChar() == '<') {
+          if (MatchChar('<')) {
             MakeToken(TOKEN_DOTDOTLT);
           } else {
             TwoCharToken('.', TOKEN_DOTDOTDOT, TOKEN_DOTDOT);
@@ -785,6 +785,10 @@ std::string Token::ToString() const {
       ret += " : '";
       ret += value.ToString();
       ret += "'";
+      break;
+
+    case TOKEN_LINE:
+      //linefeed는 escape하던지 안보여주던지...
       break;
 
     default:
