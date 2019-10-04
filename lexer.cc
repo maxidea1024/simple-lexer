@@ -2,26 +2,11 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
 #include "lexer.h"
 #include "strings.h"
 #include "util.h"
-
-/*
-  // A portion of a string literal preceding an interpolated expression. This
-  // string:
-  //
-  //     "a %(b) c %(d) e"
-  //
-  // is tokenized to:
-  //
-  //     TOKEN_INTERPOLATION "a "
-  //     TOKEN_NAME          b
-  //     TOKEN_INTERPOLATION " c "
-  //     TOKEN_NAME          d
-  //     TOKEN_STRING        " e"
-  TOKEN_INTERPOLATION,
-*/
 
 struct Keyword {
   const char* identifier;
@@ -84,6 +69,10 @@ void Lexer::Init(const char* source, size_t source_length) {
   NextToken();
 }
 
+bool Lexer::IsEOF() const {
+  return current.type == TOKEN_EOF;
+}
+
 // Returns true if [c] is a valid (non-initial) identifier character.
 inline bool IsName(char c) {
   return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || c == '_';
@@ -108,7 +97,7 @@ char Lexer::PeekNextChar() const {
 // Advances the lexer forward one character.
 char Lexer::NextChar() {
   char c = PeekChar();
-  assert(*current_char_);
+  //assert(*current_char_);
   current_char_++;
   if (c == '\n') {
     current_line_++;
@@ -424,9 +413,6 @@ void Lexer::ReadString() {
     }
   }
 
-  // current.value = NewStringLength(vm, (char*)string.data, string.count);
-  // ByteBufferClear(vm, &string);
-
   if (string.size() > 0) {
     current.value = Value(&string[0], string.size());
   } else {
@@ -489,7 +475,7 @@ void Lexer::NextToken() {
         MakeToken(TOKEN_COMMA);
         return;
       case '*':
-        MakeToken(TOKEN_STAR);
+        TwoCharToken('*', TOKEN_STARSTAR, TOKEN_STAR);
         return;
       case '%':
         MakeToken(TOKEN_PERCENT);
@@ -628,8 +614,14 @@ void Lexer::NextToken() {
 }
 
 void Lexer::LexError(const char* error, ...) {
-  // TODO
-  printf("!!!\n");
+  char buf[2048];
+
+  va_list arg_list;
+  va_start(arg_list, error);
+  vsnprintf_s(buf, 2048 - 1, error, arg_list);
+  va_end(arg_list);
+
+  fprintf(stderr, "LEX-ERROR(#%d): %s\n", current.line, buf);
 }
 
 std::string Token::TypeName() const {
@@ -658,6 +650,8 @@ std::string Token::TypeName() const {
       return ",";
     case TOKEN_STAR:
       return "*";
+    case TOKEN_STARSTAR:
+      return "**";
     case TOKEN_SLASH:
       return "/";
     case TOKEN_PERCENT:
@@ -791,33 +785,3 @@ std::string Token::ToString() const {
 
   return ret;
 }
-
-
-/*
-static void stringInterpolation(Compiler* compiler, bool canAssign) {
-  // Instantiate a new list.
-  loadCoreVariable(compiler, "List");
-  callMethod(compiler, 0, "new()", 5);
-
-  do {
-    // The opening string part.
-    literal(compiler, false);
-    callMethod(compiler, 1, "addCore_(_)", 11);
-
-    // The interpolated expression.
-    ignoreNewlines(compiler);
-    expression(compiler);
-    callMethod(compiler, 1, "addCore_(_)", 11);
-
-    ignoreNewlines(compiler);
-  } while (match(compiler, TOKEN_INTERPOLATION));
-
-  // The trailing string part.
-  consume(compiler, TOKEN_STRING, "Expect end of string interpolation.");
-  literal(compiler, false);
-  callMethod(compiler, 1, "addCore_(_)", 11);
-
-  // The list of interpolated parts.
-  callMethod(compiler, 0, "join()", 6);
-}
-*/

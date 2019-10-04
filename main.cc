@@ -4,8 +4,14 @@ int main(int argc, char* argv[]) {
   Lexer l;
 
   //l.Init("\"${a}..${b}..${c}..!\"");
-  l.Init("\"@@${a}..${b}##\"");
-  //l.Init("true false if while var val yield resume");
+  //l.Init("\"@@${a}..${b}##\"");
+  //l.Init(
+  //  "var x = 100\n"
+  //  "if x == 100 print(123)\n"
+  //);
+  // l.Init("true false if while var val yield resume");
+
+  l.Init("/* /* multi level block comments */ */");
 
   while (l.current.type != TOKEN_EOF) {
     //printf("%04d> %-12s : %s\n", l.current.line, l.current.TypeName().c_str(),

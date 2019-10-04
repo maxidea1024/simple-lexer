@@ -9,6 +9,37 @@
 // [] : brackets
 // () : parenthesis
 
+
+/*
+static void stringInterpolation(Compiler* compiler, bool canAssign) {
+  // Instantiate a new list.
+  loadCoreVariable(compiler, "List");
+  callMethod(compiler, 0, "new()", 5);
+
+  do {
+    // The opening string part.
+    literal(compiler, false);
+    callMethod(compiler, 1, "addCore_(_)", 11);
+
+    // The interpolated expression.
+    ignoreNewlines(compiler);
+    expression(compiler);
+    callMethod(compiler, 1, "addCore_(_)", 11);
+
+    ignoreNewlines(compiler);
+  } while (match(compiler, TOKEN_INTERPOLATION));
+
+  // The trailing string part.
+  consume(compiler, TOKEN_STRING, "Expect end of string interpolation.");
+  literal(compiler, false);
+  callMethod(compiler, 1, "addCore_(_)", 11);
+
+  // The list of interpolated parts.
+  callMethod(compiler, 0, "join()", 6);
+}
+*/
+
+
 enum TokenType {
   TOKEN_LEFT_PAREN,
   TOKEN_RIGHT_PAREN,
@@ -21,7 +52,10 @@ enum TokenType {
   TOKEN_DOTDOT,
   TOKEN_DOTDOTDOT,
   TOKEN_COMMA,
+
   TOKEN_STAR,
+  TOKEN_STARSTAR,
+
   TOKEN_SLASH,
   TOKEN_PERCENT,
   TOKEN_PLUS,
@@ -43,6 +77,10 @@ enum TokenType {
   TOKEN_GTEQ,
   TOKEN_EQEQ,
   TOKEN_BANGEQ,
+
+  //TODO
+  //TOKEN_EQEQEQ,
+  //TOKEN_BANGEQEQEQ,
 
   TOKEN_BREAK,
   TOKEN_CLASS,
@@ -112,6 +150,8 @@ class Lexer {
 
   void Init(const char* source);
   void Init(const char* source, size_t source_length);
+
+  bool IsEOF() const;
 
   char PeekChar() const;
   char PeekNextChar() const;
