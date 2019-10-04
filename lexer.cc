@@ -230,7 +230,8 @@ void Lexer::ReadHexNumber() {
   NextChar();
 
   // Iterate over all the valid hexadecimal digits found.
-  while (ReadHexDigit() != -1);
+  while (ReadHexDigit() != -1)
+    ;
 
   MakeNumber(true);
 }
@@ -472,8 +473,8 @@ void Lexer::NextToken() {
 
       case '}':
         if (num_braces_ > 0 && --braces_[num_braces_ - 1] == 0) {
-          // This is the final ")", so the interpolation expression has ended.
-          // This ")" now begins the next section of the template string.
+          // This is the final "}", so the interpolation expression has ended.
+          // This "}" now begins the next section of the template string.
           num_braces_--;
           ReadString();
           return;
@@ -629,7 +630,6 @@ void Lexer::NextToken() {
 void Lexer::LexError(const char* error, ...) {
   // TODO
   printf("!!!\n");
-
 }
 
 std::string Token::TypeName() const {
@@ -753,7 +753,7 @@ std::string Token::TypeName() const {
       return "string";
 
     case TOKEN_INTERPOLATION:
-       return "interpolation";
+      return "interpolation";
 
     case TOKEN_LINE:
       return "line";
@@ -777,6 +777,12 @@ std::string Token::ToString() const {
       ret += value.ToString();
       break;
 
+    case TOKEN_INTERPOLATION:
+      ret += " : '";
+      ret += value.ToString();
+      ret += "'";
+      break;
+
     default:
       ret += " : ";
       ret += std::string(start, length);
@@ -785,3 +791,33 @@ std::string Token::ToString() const {
 
   return ret;
 }
+
+
+/*
+static void stringInterpolation(Compiler* compiler, bool canAssign) {
+  // Instantiate a new list.
+  loadCoreVariable(compiler, "List");
+  callMethod(compiler, 0, "new()", 5);
+
+  do {
+    // The opening string part.
+    literal(compiler, false);
+    callMethod(compiler, 1, "addCore_(_)", 11);
+
+    // The interpolated expression.
+    ignoreNewlines(compiler);
+    expression(compiler);
+    callMethod(compiler, 1, "addCore_(_)", 11);
+
+    ignoreNewlines(compiler);
+  } while (match(compiler, TOKEN_INTERPOLATION));
+
+  // The trailing string part.
+  consume(compiler, TOKEN_STRING, "Expect end of string interpolation.");
+  literal(compiler, false);
+  callMethod(compiler, 1, "addCore_(_)", 11);
+
+  // The list of interpolated parts.
+  callMethod(compiler, 0, "join()", 6);
+}
+*/
