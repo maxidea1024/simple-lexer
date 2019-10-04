@@ -234,9 +234,7 @@ void Lexer::ReadHexNumber() {
   NextChar();
 
   // Iterate over all the valid hexadecimal digits found.
-  while (ReadHexDigit() != -1) {
-    continue;
-  }
+  while (ReadHexDigit() != -1);
 
   MakeNumber(true);
 }
