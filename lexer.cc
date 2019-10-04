@@ -1,6 +1,7 @@
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "lexer.h"
 #include "strings.h"
@@ -54,9 +55,13 @@ static Keyword keywords[] = {
 
 Lexer::Lexer() { Init("", 0); }
 
+Lexer::Lexer(const char* source) { Init(source, strlen(source)); }
+
 Lexer::Lexer(const char* source, int source_length) {
   Init(source, source_length);
 }
+
+void Lexer::Init(const char* source) { Init(source, strlen(source)); }
 
 void Lexer::Init(const char* source, int source_length) {
   source_ = source;
@@ -103,6 +108,11 @@ char Lexer::PeekNextChar() const {
 // Advances the lexer forward one character.
 char Lexer::NextChar() {
   char c = PeekChar();
+  if (*current_char_ == '\0') {
+    assert(0);
+    return '\0';
+  }
+
   current_char_++;
   if (c == '\n') {
     current_line_++;
@@ -315,7 +325,7 @@ void Lexer::ReadUnicodeEscape(std::vector<char>* string, int length) {
   int num_bytes = Utf8EncodeNumBytes(value);
   if (num_bytes > 0) {
     string->resize(string->size() + num_bytes);
-    Utf8Encode(value, string->data + string->size() - num_bytes);
+    Utf8Encode(value, (uint8_t*)&(*string)[0] + string->size() - num_bytes);
   }
 }
 
@@ -420,8 +430,7 @@ void Lexer::ReadString() {
 
     // current.value = NewStringLength(vm, (char*)string.data, string.count);
     // ByteBufferClear(vm, &string);
-    current.value.val.string_ =
-        Strings::instance().Add(&string[0], string.size());
+    current.value = Value(&string[0], string.size());
 
     MakeToken(type);
   }
@@ -460,6 +469,7 @@ void Lexer::NextToken() {
         }
         MakeToken(TOKEN_LEFT_BRACE);
         return;
+
       case '}':
         if (num_braces_ > 0 && --braces_[num_braces_ - 1] == 0) {
           // This is the final ")", so the interpolation expression has ended.
@@ -568,6 +578,7 @@ void Lexer::NextToken() {
         ReadString();
         return;
 
+      //TODO: 이건 오바 아닌가??
       case '_':
         ReadName(PeekChar() == '_' ? TOKEN_STATIC_FIELD : TOKEN_FIELD);
         return;
@@ -575,10 +586,9 @@ void Lexer::NextToken() {
       case '0':
         if (PeekChar() == 'x') {
           ReadHexNumber();
-          return;
+        } else {
+          ReadNumber();
         }
-
-        ReadNumber();
         return;
 
       default:
@@ -596,6 +606,10 @@ void Lexer::NextToken() {
           if (c >= 32 && c <= 126) {
             LexError("Invalid character '%c'.", c);
           } else {
+            // Don't show non-ASCII values since we didn't UTF-8 decode the
+            // bytes. Since there are no non-ASCII byte values that are
+            // meaningful code units in Wren, the lexer works on raw bytes,
+            // even though the source code and console output are UTF-8.
             LexError("Invalid byte 0x%x.", (uint8_t)c);
           }
 
@@ -614,4 +628,170 @@ void Lexer::NextToken() {
 
 void Lexer::LexError(const char* error, ...) {
   // TODO
+}
+
+std::string Token::TypeName() const {
+  switch (type) {
+    case TOKEN_LEFT_PAREN:
+      return "(";
+    case TOKEN_RIGHT_PAREN:
+      return ")";
+    case TOKEN_LEFT_BRACKET:
+      return "[";
+    case TOKEN_RIGHT_BRACKET:
+      return "]";
+    case TOKEN_LEFT_BRACE:
+      return "{";
+    case TOKEN_RIGHT_BRACE:
+      return "}";
+    case TOKEN_COLON:
+      return ":";
+    case TOKEN_DOT:
+      return ".";
+    case TOKEN_DOTDOT:
+      return "..";
+    case TOKEN_DOTDOTDOT:
+      return "...";
+    case TOKEN_COMMA:
+      return ",";
+    case TOKEN_STAR:
+      return "*";
+    case TOKEN_SLASH:
+      return "/";
+    case TOKEN_PERCENT:
+      return "%";
+    case TOKEN_PLUS:
+      return "+";
+    case TOKEN_MINUS:
+      return "-";
+    case TOKEN_LTLT:
+      return "<<";
+    case TOKEN_GTGT:
+      return ">>";
+    case TOKEN_PIPE:
+      return "|";
+    case TOKEN_PIPEPIPE:
+      return "||";
+    case TOKEN_CARET:
+      return "^";
+    case TOKEN_AMP:
+      return "&";
+    case TOKEN_AMPAMP:
+      return "&&";
+    case TOKEN_BANG:
+      return "!";
+    case TOKEN_TILDE:
+      return "~";
+    case TOKEN_QUESTION:
+      return "?";
+    case TOKEN_EQ:
+      return "=";
+    case TOKEN_LT:
+      return "<";
+    case TOKEN_GT:
+      return ">";
+    case TOKEN_LTEQ:
+      return "<=";
+    case TOKEN_GTEQ:
+      return ">=";
+    case TOKEN_EQEQ:
+      return "==";
+    case TOKEN_BANGEQ:
+      return "!=";
+
+    case TOKEN_BREAK:
+      return "break";
+    case TOKEN_CLASS:
+      return "class";
+    case TOKEN_CONSTRUCT:
+      return "construct";
+    case TOKEN_ELSE:
+      return "else";
+    case TOKEN_FALSE:
+      return "false";
+    case TOKEN_FOR:
+      return "for";
+    case TOKEN_FOREIGN:
+      return "foreign";
+    case TOKEN_IF:
+      return "if";
+    case TOKEN_IMPORT:
+      return "import";
+    case TOKEN_IN:
+      return "in";
+    case TOKEN_IS:
+      return "is";
+    case TOKEN_NULL:
+      return "null";
+    case TOKEN_RETURN:
+      return "return";
+    case TOKEN_STATIC:
+      return "static";
+    case TOKEN_SUPER:
+      return "super";
+    case TOKEN_THIS:
+      return "this";
+    case TOKEN_TRUE:
+      return "true";
+    case TOKEN_VAR:
+      return "var";
+    case TOKEN_WHILE:
+      return "while";
+
+    case TOKEN_FIELD:
+      return "field";
+    case TOKEN_STATIC_FIELD:
+      return "static_field";
+    case TOKEN_NAME:
+      return "name";
+    case TOKEN_NUMBER:
+      return "number";
+
+    // A string literal without any interpolation, or the last section of a
+    // string following the last interpolated expression.
+    case TOKEN_STRING:
+      return "string";
+
+    // A portion of a string literal preceding an interpolated expression. This
+    // string:
+    //
+    //     "a %(b) c %(d) e"
+    //
+    // is tokenized to:
+    //
+    //     TOKEN_INTERPOLATION "a "
+    //     TOKEN_NAME          b
+    //     TOKEN_INTERPOLATION " c "
+    //     TOKEN_NAME          d
+    //     TOKEN_STRING        " e"
+    case TOKEN_INTERPOLATION:
+      return "interpolation";
+
+    case TOKEN_LINE:
+      return "line";
+
+    case TOKEN_ERROR:
+      return "error";
+    case TOKEN_EOF:
+      return "eof";
+  }
+
+  return std::string("__unknown__");
+}
+
+std::string Token::ToString() const {
+  std::string ret = TypeName();
+
+  switch (type) {
+    case TOKEN_FIELD:
+    case TOKEN_STATIC_FIELD:
+    case TOKEN_NAME:
+    case TOKEN_NUMBER:
+    case TOKEN_STRING:
+      ret += " : ";
+      ret += value.ToString();
+      break;
+  }
+
+  return ret;
 }

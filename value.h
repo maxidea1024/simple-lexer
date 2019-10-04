@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stdint.h>
+#include <string>
 
 enum ValueType {
     VALUE_NONE,
@@ -54,6 +55,8 @@ struct Value {
     bool operator != (const Value& rhs) const {
         return !(*this == rhs);
     }
+
+    std::string ToString() const;
 
     static const Value NONE;
 };

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <string>
 
 #include "value.h"
 
@@ -98,13 +99,18 @@ struct Token {
   int length;
   int line;
   Value value;
+
+  std::string TypeName() const;
+  std::string ToString() const;
 };
 
 class Lexer {
  public:
   Lexer();
+  Lexer(const char* source);
   Lexer(const char* source, int source_length);
 
+  void Init(const char* source);
   void Init(const char* source, int source_length);
 
   char PeekChar() const;
