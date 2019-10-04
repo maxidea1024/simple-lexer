@@ -27,26 +27,26 @@ struct Keyword {
 
 // The table of reserved words and their associated token types.
 static Keyword keywords[] = {
-    {"break", 5, TOKEN_BREAK},
-    {"class", 5, TOKEN_CLASS},
-    {"construct", 9, TOKEN_CONSTRUCT},
-    {"else", 4, TOKEN_ELSE},
-    {"false", 5, TOKEN_FALSE},
-    {"for", 3, TOKEN_FOR},
-    {"foreign", 7, TOKEN_FOREIGN},
-    {"if", 2, TOKEN_IF},
-    {"import", 6, TOKEN_IMPORT},
-    {"in", 2, TOKEN_IN},
-    {"is", 2, TOKEN_IS},
-    {"null", 4, TOKEN_NULL},
-    {"return", 6, TOKEN_RETURN},
-    {"static", 6, TOKEN_STATIC},
-    {"super", 5, TOKEN_SUPER},
-    {"this", 4, TOKEN_THIS},
-    {"true", 4, TOKEN_TRUE},
-    {"var", 3, TOKEN_VAR},
-    {"while", 5, TOKEN_WHILE},
-    {NULL, 0, TOKEN_EOF}  // Sentinel to mark the end of the array.
+  {"break", 5, TOKEN_BREAK},
+  {"class", 5, TOKEN_CLASS},
+  {"construct", 9, TOKEN_CONSTRUCT},
+  {"else", 4, TOKEN_ELSE},
+  {"false", 5, TOKEN_FALSE},
+  {"for", 3, TOKEN_FOR},
+  {"foreign", 7, TOKEN_FOREIGN},
+  {"if", 2, TOKEN_IF},
+  {"import", 6, TOKEN_IMPORT},
+  {"in", 2, TOKEN_IN},
+  {"is", 2, TOKEN_IS},
+  {"null", 4, TOKEN_NULL},
+  {"return", 6, TOKEN_RETURN},
+  {"static", 6, TOKEN_STATIC},
+  {"super", 5, TOKEN_SUPER},
+  {"this", 4, TOKEN_THIS},
+  {"true", 4, TOKEN_TRUE},
+  {"var", 3, TOKEN_VAR},
+  {"while", 5, TOKEN_WHILE},
+  {NULL, 0, TOKEN_EOF}  // Sentinel to mark the end of the array.
 };
 
 Lexer::Lexer() { Init("", 0); }
