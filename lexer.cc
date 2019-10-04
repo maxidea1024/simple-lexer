@@ -484,10 +484,10 @@ void Lexer::NextToken() {
         MakeToken(TOKEN_CARET);
         return;
       case '+':
-        MakeToken(TOKEN_PLUS);
+        TwoCharToken('+', TOKEN_PLUSPLUS, TOKEN_PLUS);
         return;
       case '-':
-        MakeToken(TOKEN_MINUS);
+        TwoCharToken('-', TOKEN_MINUSMINUS, TOKEN_MINUS);
         return;
       case '~':
         MakeToken(TOKEN_TILDE);
@@ -511,7 +511,11 @@ void Lexer::NextToken() {
 
       case '.':
         if (MatchChar('.')) {
-          TwoCharToken('.', TOKEN_DOTDOTDOT, TOKEN_DOTDOT);
+          if (PeekChar() == '<') {
+            MakeToken(TOKEN_DOTDOTLT);
+          } else {
+            TwoCharToken('.', TOKEN_DOTDOTDOT, TOKEN_DOTDOT);
+          }
           return;
         }
 
@@ -646,6 +650,8 @@ std::string Token::TypeName() const {
       return "..";
     case TOKEN_DOTDOTDOT:
       return "...";
+    case TOKEN_DOTDOTLT:
+      return "..<";
     case TOKEN_COMMA:
       return ",";
     case TOKEN_STAR:
@@ -658,8 +664,12 @@ std::string Token::TypeName() const {
       return "%";
     case TOKEN_PLUS:
       return "+";
+    case TOKEN_PLUSPLUS:
+      return "++";
     case TOKEN_MINUS:
       return "-";
+    case TOKEN_MINUSMINUS:
+      return "--";
     case TOKEN_LTLT:
       return "<<";
     case TOKEN_GTGT:
