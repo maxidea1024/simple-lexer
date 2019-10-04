@@ -712,6 +712,8 @@ void Lexer::LexError(const char* error, ...) {
   vsnprintf_s(buf, 2048 - 1, error, arg_list);
   va_end(arg_list);
 
+  //TODO 그냥 마지막 에러 메시지를 저장하는 정도만 하면 되지 않으려나??
+
   fprintf(stderr, "LEX-ERROR(#%d:%d): %s\n", current.line, current.column, buf);
   fflush(stderr);
 }
