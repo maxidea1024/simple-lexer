@@ -1,7 +1,5 @@
 
-TokenType Parser::PeekToken() {
-  return lexer_.current.type;
-}
+TokenType Parser::PeekToken() { return lexer_.current.type; }
 
 bool Parser::Match(TokenType expected) {
   if (PeekToken() != expected) {
@@ -29,53 +27,47 @@ bool Parser::MatchLine() {
     return false;
   }
 
-  while (Match(TOKEN_LINE));
+  while (Match(TOKEN_LINE))
+    ;
   return true;
 }
 
-void Parser::IgnoreNewLines() {
-  MatchLine();
-}
+void Parser::IgnoreNewLines() { MatchLine(); }
 
 void Parser::ExpectLine(const char* error_message) {
   Expect(TOKEN_LINE, error_message);
   IgnoreNewLines();
 }
 
-
-void Parser::PushScope() {
-  scope_depth_++;
-}
+void Parser::PushScope() { scope_depth_++; }
 
 void Parser::PopScope() {
-  //TODO something...
+  // TODO something...
 
   scope_depth_--;
 }
 
-
 // Grammar ---------------------------------------------------------------------
 
-typedef enum
-{
+typedef enum {
   PREC_NONE,
   PREC_LOWEST,
-  PREC_ASSIGNMENT,    // =
-  PREC_CONDITIONAL,   // ?:
-  PREC_LOGICAL_OR,    // ||
-  PREC_LOGICAL_AND,   // &&
-  PREC_EQUALITY,      // == !=
-  PREC_IS,            // is
-  PREC_COMPARISON,    // < > <= >=
-  PREC_BITWISE_OR,    // |
-  PREC_BITWISE_XOR,   // ^
-  PREC_BITWISE_AND,   // &
-  PREC_BITWISE_SHIFT, // << >>
-  PREC_RANGE,         // .. ...
-  PREC_TERM,          // + -
-  PREC_FACTOR,        // * / %
-  PREC_UNARY,         // unary - ! ~
-  PREC_CALL,          // . () []
+  PREC_ASSIGNMENT,     // =
+  PREC_CONDITIONAL,    // ?:
+  PREC_LOGICAL_OR,     // ||
+  PREC_LOGICAL_AND,    // &&
+  PREC_EQUALITY,       // == !=
+  PREC_IS,             // is
+  PREC_COMPARISON,     // < > <= >=
+  PREC_BITWISE_OR,     // |
+  PREC_BITWISE_XOR,    // ^
+  PREC_BITWISE_AND,    // &
+  PREC_BITWISE_SHIFT,  // << >>
+  PREC_RANGE,          // .. ...
+  PREC_TERM,           // + -
+  PREC_FACTOR,         // * / %
+  PREC_UNARY,          // unary - ! ~
+  PREC_CALL,           // . () []
   PREC_PRIMARY
 } Precedence;
 
@@ -83,8 +75,7 @@ typedef void (*GrammarFn)(Compiler*, bool canAssign);
 
 typedef void (*SignatureFn)(Signature* signature);
 
-typedef struct
-{
+typedef struct {
   GrammarFn prefix;
   GrammarFn infix;
   SignatureFn method;
@@ -99,8 +90,7 @@ static void statement();
 static void definition();
 static void parsePrecedence(Precedence precedence);
 
-static void PatchJump(int offset)
-{
+static void PatchJump(int offset) {
   // -2 to adjust for the bytecode for the jump offset itself.
   int jump = fn_->code.count - offset - 2;
   if (jump > MAX_JUMP) {
@@ -112,8 +102,7 @@ static void PatchJump(int offset)
   fn_->code.data[offset + 1] = jump & 0xff;
 }
 
-static bool FinishBlock()
-{
+static bool FinishBlock() {
   // Empty blocks do nothing.
   if (Match(TOKEN_RIGHT_BRACE)) {
     return false;
@@ -139,20 +128,16 @@ static bool FinishBlock()
   return false;
 }
 
-static void FinishBody(bool isInitializer)
-{
+static void FinishBody(bool isInitializer) {
   bool isExpressionBody = FinishBlock(compiler);
 
-  if (isInitializer)
-  {
+  if (isInitializer) {
     // If the initializer body evaluates to a value, discard it.
     if (isExpressionBody) EmitOp(compiler, CODE_POP);
 
     // The receiver is always stored in the first local slot.
     EmitOp(compiler, CODE_LOAD_LOCAL_0);
-  }
-  else if (!isExpressionBody)
-  {
+  } else if (!isExpressionBody) {
     // Implicitly return null in statement bodies.
     EmitOp(compiler, CODE_NULL);
   }
@@ -160,47 +145,39 @@ static void FinishBody(bool isInitializer)
   EmitOp(compiler, CODE_RETURN);
 }
 
-static void ValidateNumParameters(int numArgs)
-{
-  if (numArgs == MAX_PARAMETERS + 1)
-  {
+static void ValidateNumParameters(int numArgs) {
+  if (numArgs == MAX_PARAMETERS + 1) {
     // Only show an error at exactly max + 1 so that we can keep parsing the
     // parameters and minimize cascaded errors.
-    Error("Methods cannot have more than %d parameters.",
-          MAX_PARAMETERS);
+    Error("Methods cannot have more than %d parameters.", MAX_PARAMETERS);
   }
 }
 
-static void finishParameterList(Signature* signature)
-{
-  do
-  {
+static void finishParameterList(Signature* signature) {
+  do {
     ignoreNewlines(compiler);
     ValidateNumParameters(compiler, ++signature->arity);
 
     // Define a local variable in the method for the parameter.
     declareNamedVariable(compiler);
-  }
-  while (Match(TOKEN_COMMA));
+  } while (Match(TOKEN_COMMA));
 }
 
 // Gets the symbol for a method [name] with [length].
-static int methodSymbol(const char* name, int length)
-{
-  return wrenSymbolTableEnsure(compiler->parser->vm,
-      &compiler->parser->vm->methodNames, name, length);
+static int methodSymbol(const char* name, int length) {
+  return wrenSymbolTableEnsure(
+      compiler->parser->vm, &compiler->parser->vm->methodNames, name, length);
 }
 
 static void signatureParameterList(char name[MAX_METHOD_SIGNATURE], int* length,
-                                   int numParams, char leftBracket, char rightBracket)
-{
+                                   int numParams, char leftBracket,
+                                   char rightBracket) {
   name[(*length)++] = leftBracket;
 
   // This function may be called with too many parameters. When that happens,
   // a compile error has already been reported, but we need to make sure we
   // don't overflow the string too, hence the MAX_PARAMETERS check.
-  for (int i = 0; i < numParams && i < MAX_PARAMETERS; i++)
-  {
+  for (int i = 0; i < numParams && i < MAX_PARAMETERS; i++) {
     if (i > 0) name[(*length)++] = ',';
     name[(*length)++] = '_';
   }
@@ -208,16 +185,14 @@ static void signatureParameterList(char name[MAX_METHOD_SIGNATURE], int* length,
 }
 
 static void signatureToString(Signature* signature,
-                              char name[MAX_METHOD_SIGNATURE], int* length)
-{
+                              char name[MAX_METHOD_SIGNATURE], int* length) {
   *length = 0;
 
   // Build the full name from the signature.
   memcpy(name + *length, signature->name, signature->length);
   *length += signature->length;
 
-  switch (signature->type)
-  {
+  switch (signature->type) {
     case SIG_METHOD:
       signatureParameterList(name, length, signature->arity, '(', ')');
       break;
@@ -252,8 +227,7 @@ static void signatureToString(Signature* signature,
   name[*length] = '\0';
 }
 
-static int signatureSymbol(Signature* signature)
-{
+static int signatureSymbol(Signature* signature) {
   // Build the full name from the signature.
   char name[MAX_METHOD_SIGNATURE];
   int length;
@@ -262,8 +236,7 @@ static int signatureSymbol(Signature* signature)
   return methodSymbol(compiler, name, length);
 }
 
-static Signature signatureFromToken(SignatureType type)
-{
+static Signature signatureFromToken(SignatureType type) {
   Signature signature;
 
   // Get the token for the method name.
@@ -273,10 +246,8 @@ static Signature signatureFromToken(SignatureType type)
   signature.type = type;
   signature.arity = 0;
 
-  if (signature.length > MAX_METHOD_NAME)
-  {
-    Error("Method names cannot be longer than %d characters.",
-          MAX_METHOD_NAME);
+  if (signature.length > MAX_METHOD_NAME) {
+    Error("Method names cannot be longer than %d characters.", MAX_METHOD_NAME);
     signature.length = MAX_METHOD_NAME;
   }
 
@@ -294,14 +265,11 @@ static void FinishArgumentList(Signature* signature) {
   ignoreNewlines(compiler);
 }
 
-static void CallSignature(Code instruction,
-                          Signature* signature)
-{
+static void CallSignature(Code instruction, Signature* signature) {
   int symbol = signatureSymbol(compiler, signature);
   emitShortArg(compiler, (Code)(instruction + signature->arity), symbol);
 
-  if (instruction == CODE_SUPER_0)
-  {
+  if (instruction == CODE_SUPER_0) {
     // Super calls need to be statically bound to the class's superclass. This
     // ensures we call the right method even when a method containing a super
     // call is inherited by another subclass.
@@ -314,36 +282,29 @@ static void CallSignature(Code instruction,
   }
 }
 
-static void callMethod(int numArgs, const char* name,
-                       int length)
-{
+static void callMethod(int numArgs, const char* name, int length) {
   int symbol = methodSymbol(compiler, name, length);
   emitShortArg(compiler, (Code)(CODE_CALL_0 + numArgs), symbol);
 }
 
-static void methodCall(Code instruction,
-                       Signature* signature)
-{
+static void methodCall(Code instruction, Signature* signature) {
   // Make a new signature that contains the updated arity and type based on
   // the arguments we find.
-  Signature called = { signature->name, signature->length, SIG_GETTER, 0 };
+  Signature called = {signature->name, signature->length, SIG_GETTER, 0};
 
   // Parse the argument list, if any.
-  if (Match(TOKEN_LEFT_PAREN))
-  {
+  if (Match(TOKEN_LEFT_PAREN)) {
     called.type = SIG_METHOD;
 
     // Allow empty an argument list.
-    if (Peek(compiler) != TOKEN_RIGHT_PAREN)
-    {
+    if (Peek(compiler) != TOKEN_RIGHT_PAREN) {
       FinishArgumentList(compiler, &called);
     }
     Expect(TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
   }
 
   // Parse the block argument, if any.
-  if (Match(TOKEN_LEFT_BRACE))
-  {
+  if (Match(TOKEN_LEFT_BRACE)) {
     // Include the block argument in the arity.
     called.type = SIG_METHOD;
     called.arity++;
@@ -352,11 +313,10 @@ static void methodCall(Code instruction,
     initCompiler(&fnCompiler, compiler->parser, compiler, false);
 
     // Make a dummy signature to track the arity.
-    Signature fnSignature = { "", 0, SIG_METHOD, 0 };
+    Signature fnSignature = {"", 0, SIG_METHOD, 0};
 
     // Parse the parameter list, if any.
-    if (Match(TOKEN_PIPE))
-    {
+    if (Match(TOKEN_PIPE)) {
       finishParameterList(&fnCompiler, &fnSignature);
       Expect(TOKEN_PIPE, "Expect '|' after function parameters.");
     }
@@ -378,10 +338,8 @@ static void methodCall(Code instruction,
 
   // If this is a super() call for an initializer, make sure we got an actual
   // argument list.
-  if (signature->type == SIG_INITIALIZER)
-  {
-    if (called.type != SIG_METHOD)
-    {
+  if (signature->type == SIG_INITIALIZER) {
+    if (called.type != SIG_METHOD) {
       Error("A superclass constructor must have an argument list.");
     }
 
@@ -391,13 +349,11 @@ static void methodCall(Code instruction,
   CallSignature(compiler, instruction, &called);
 }
 
-static void namedCall(bool canAssign, Code instruction)
-{
+static void namedCall(bool canAssign, Code instruction) {
   // Get the token for the method name.
   Signature signature = signatureFromToken(compiler, SIG_GETTER);
 
-  if (canAssign && Match(TOKEN_EQ))
-  {
+  if (canAssign && Match(TOKEN_EQ)) {
     ignoreNewlines(compiler);
 
     // Build the setter signature.
@@ -407,17 +363,13 @@ static void namedCall(bool canAssign, Code instruction)
     // Compile the assigned value.
     expression(compiler);
     CallSignature(compiler, instruction, &signature);
-  }
-  else
-  {
+  } else {
     methodCall(compiler, instruction, &signature);
   }
 }
 
-static void loadVariable(Variable variable)
-{
-  switch (variable.scope)
-  {
+static void loadVariable(Variable variable) {
+  switch (variable.scope) {
     case SCOPE_LOCAL:
       loadLocal(compiler, variable.index);
       break;
@@ -432,13 +384,11 @@ static void loadVariable(Variable variable)
   }
 }
 
-static void loadThis()
-{
+static void loadThis() {
   loadVariable(compiler, resolveNonmodule(compiler, "this", 4));
 }
 
-static void loadCoreVariable(const char* name)
-{
+static void loadCoreVariable(const char* name) {
   int symbol = wrenSymbolTableFind(&compiler->parser->module->variableNames,
                                    name, strlen(name));
   ASSERT(symbol != -1, "Should have already defined core name.");
@@ -446,21 +396,18 @@ static void loadCoreVariable(const char* name)
 }
 
 // A parenthesized expression.
-static void grouping(bool canAssign)
-{
+static void grouping(bool canAssign) {
   expression(compiler);
   Expect(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
 }
 
-static void list(bool canAssign)
-{
+static void list(bool canAssign) {
   // Instantiate a new list.
   loadCoreVariable(compiler, "List");
   callMethod(compiler, 0, "new()", 5);
 
   // Compile the list elements. Each one compiles to a ".add()" call.
-  do
-  {
+  do {
     ignoreNewlines(compiler);
 
     // Stop if we hit the end of the list.
@@ -476,16 +423,14 @@ static void list(bool canAssign)
   Expect(TOKEN_RIGHT_BRACKET, "Expect ']' after list elements.");
 }
 
-static void map(bool canAssign)
-{
+static void map(bool canAssign) {
   // Instantiate a new map.
   loadCoreVariable(compiler, "Map");
   callMethod(compiler, 0, "new()", 5);
 
   // Compile the map elements. Each one is compiled to just invoke the
   // subscript setter on the map.
-  do
-  {
+  do {
     ignoreNewlines(compiler);
 
     // Stop if we hit the end of the map.
@@ -506,8 +451,7 @@ static void map(bool canAssign)
   Expect(TOKEN_RIGHT_BRACE, "Expect '}' after map entries.");
 }
 
-static void unaryOp(bool canAssign)
-{
+static void unaryOp(bool canAssign) {
   GrammarRule* rule = getRule(compiler->parser->previous.type);
 
   ignoreNewlines(compiler);
@@ -519,16 +463,13 @@ static void unaryOp(bool canAssign)
   callMethod(compiler, 0, rule->name, 1);
 }
 
-static void boolean(bool canAssign)
-{
-  EmitOp(compiler,
-      compiler->parser->previous.type == TOKEN_FALSE ? CODE_FALSE : CODE_TRUE);
+static void boolean(bool canAssign) {
+  EmitOp(compiler, compiler->parser->previous.type == TOKEN_FALSE ? CODE_FALSE
+                                                                  : CODE_TRUE);
 }
 
-static Compiler* getEnclosingClassCompiler()
-{
-  while (compiler != NULL)
-  {
+static Compiler* getEnclosingClassCompiler() {
+  while (compiler != NULL) {
     if (compiler->enclosingClass != NULL) return compiler;
     compiler = compiler->parent;
   }
@@ -536,49 +477,38 @@ static Compiler* getEnclosingClassCompiler()
   return NULL;
 }
 
-static ClassInfo* getEnclosingClass()
-{
+static ClassInfo* getEnclosingClass() {
   compiler = getEnclosingClassCompiler(compiler);
   return compiler == NULL ? NULL : compiler->enclosingClass;
 }
 
-static void field(bool canAssign)
-{
+static void field(bool canAssign) {
   // Initialize it with a fake value so we can keep parsing and minimize the
   // number of cascaded errors.
   int field = 255;
 
   ClassInfo* enclosingClass = getEnclosingClass(compiler);
 
-  if (enclosingClass == NULL)
-  {
+  if (enclosingClass == NULL) {
     Error("Cannot reference a field outside of a class definition.");
-  }
-  else if (enclosingClass->isForeign)
-  {
+  } else if (enclosingClass->isForeign) {
     Error("Cannot define fields in a foreign class.");
-  }
-  else if (enclosingClass->inStatic)
-  {
+  } else if (enclosingClass->inStatic) {
     Error("Cannot use an instance field in a static method.");
-  }
-  else
-  {
+  } else {
     // Look up the field, or implicitly define it.
     field = wrenSymbolTableEnsure(compiler->parser->vm, &enclosingClass->fields,
-        compiler->parser->previous.start,
-        compiler->parser->previous.length);
+                                  compiler->parser->previous.start,
+                                  compiler->parser->previous.length);
 
-    if (field >= MAX_FIELDS)
-    {
+    if (field >= MAX_FIELDS) {
       Error("A class can only have %d fields.", MAX_FIELDS);
     }
   }
 
   // If there's an "=" after a field name, it's an assignment.
   bool isLoad = true;
-  if (canAssign && Match(TOKEN_EQ))
-  {
+  if (canAssign && Match(TOKEN_EQ)) {
     // Compile the right-hand side.
     expression(compiler);
     isLoad = false;
@@ -586,29 +516,23 @@ static void field(bool canAssign)
 
   // If we're directly inside a method, use a more optimal instruction.
   if (compiler->parent != NULL &&
-      compiler->parent->enclosingClass == enclosingClass)
-  {
+      compiler->parent->enclosingClass == enclosingClass) {
     emitByteArg(compiler, isLoad ? CODE_LOAD_FIELD_THIS : CODE_STORE_FIELD_THIS,
                 field);
-  }
-  else
-  {
+  } else {
     loadThis(compiler);
     emitByteArg(compiler, isLoad ? CODE_LOAD_FIELD : CODE_STORE_FIELD, field);
   }
 }
 
-static void bareName(bool canAssign, Variable variable)
-{
+static void bareName(bool canAssign, Variable variable) {
   // If there's an "=" after a bare name, it's a variable assignment.
-  if (canAssign && Match(TOKEN_EQ))
-  {
+  if (canAssign && Match(TOKEN_EQ)) {
     // Compile the right-hand side.
     expression(compiler);
 
     // Emit the store instruction.
-    switch (variable.scope)
-    {
+    switch (variable.scope) {
       case SCOPE_LOCAL:
         emitByteArg(compiler, CODE_STORE_LOCAL, variable.index);
         break;
@@ -628,11 +552,9 @@ static void bareName(bool canAssign, Variable variable)
   loadVariable(compiler, variable);
 }
 
-static void staticField(bool canAssign)
-{
+static void staticField(bool canAssign) {
   Compiler* classCompiler = getEnclosingClassCompiler(compiler);
-  if (classCompiler == NULL)
-  {
+  if (classCompiler == NULL) {
     Error("Cannot use a static field outside of a class definition.");
     return;
   }
@@ -642,8 +564,7 @@ static void staticField(bool canAssign)
 
   // If this is the first time we've seen this static field, implicitly
   // define it as a variable in the scope surrounding the class definition.
-  if (resolveLocal(classCompiler, token->start, token->length) == -1)
-  {
+  if (resolveLocal(classCompiler, token->start, token->length) == -1) {
     int symbol = declareVariable(classCompiler, NULL);
 
     // Implicitly initialize it to null.
@@ -658,19 +579,16 @@ static void staticField(bool canAssign)
   bareName(compiler, canAssign, variable);
 }
 
-static bool isLocalName(const char* name)
-{
+static bool isLocalName(const char* name) {
   return name[0] >= 'a' && name[0] <= 'z';
 }
 
-static void name(bool canAssign)
-{
+static void name(bool canAssign) {
   // Look for the name in the scope chain up to the nearest enclosing method.
   Token* token = &compiler->parser->previous;
 
   Variable variable = resolveNonmodule(compiler, token->start, token->length);
-  if (variable.index != -1)
-  {
+  if (variable.index != -1) {
     bareName(compiler, canAssign, variable);
     return;
   }
@@ -685,8 +603,7 @@ static void name(bool canAssign)
 
   // If we're inside a method and the name is lowercase, treat it as a method
   // on this.
-  if (isLocalName(token->start) && getEnclosingClass(compiler) != NULL)
-  {
+  if (isLocalName(token->start) && getEnclosingClass(compiler) != NULL) {
     loadThis(compiler);
     namedCall(compiler, canAssign, CODE_CALL_0);
     return;
@@ -696,17 +613,14 @@ static void name(bool canAssign)
   variable.scope = SCOPE_MODULE;
   variable.index = wrenSymbolTableFind(&compiler->parser->module->variableNames,
                                        token->start, token->length);
-  if (variable.index == -1)
-  {
+  if (variable.index == -1) {
     // Implicitly define a module-level variable in
     // the hopes that we get a real definition later.
-    variable.index = wrenDeclareVariable(compiler->parser->vm,
-                                         compiler->parser->module,
-                                         token->start, token->length,
-                                         token->line);
+    variable.index =
+        wrenDeclareVariable(compiler->parser->vm, compiler->parser->module,
+                            token->start, token->length, token->line);
 
-    if (variable.index == -2)
-    {
+    if (variable.index == -2) {
       Error("Too many module variables defined.");
     }
   }
@@ -714,25 +628,19 @@ static void name(bool canAssign)
   bareName(compiler, canAssign, variable);
 }
 
-static void null(bool canAssign)
-{
-  EmitOp(compiler, CODE_NULL);
-}
+static void null(bool canAssign) { EmitOp(compiler, CODE_NULL); }
 
 // A number or string literal.
-static void literal(bool canAssign)
-{
+static void literal(bool canAssign) {
   emitConstant(compiler, compiler->parser->previous.value);
 }
 
-static void stringInterpolation(bool canAssign)
-{
+static void stringInterpolation(bool canAssign) {
   // Instantiate a new list.
   loadCoreVariable(compiler, "List");
   callMethod(compiler, 0, "new()", 5);
 
-  do
-  {
+  do {
     // The opening string part.
     literal(compiler, false);
     callMethod(compiler, 1, "addCore_(_)", 11);
@@ -754,11 +662,9 @@ static void stringInterpolation(bool canAssign)
   callMethod(compiler, 0, "join()", 6);
 }
 
-static void super_(bool canAssign)
-{
+static void super_(bool canAssign) {
   ClassInfo* enclosingClass = getEnclosingClass(compiler);
-  if (enclosingClass == NULL)
-  {
+  if (enclosingClass == NULL) {
     Error("Cannot use 'super' outside of a method.");
   }
 
@@ -769,14 +675,11 @@ static void super_(bool canAssign)
   // different name from the enclosing one. Figure that out.
 
   // See if it's a named super call, or an unnamed one.
-  if (Match(TOKEN_DOT))
-  {
+  if (Match(TOKEN_DOT)) {
     // Compile the superclass call.
     Expect(TOKEN_NAME, "Expect method name after 'super.'.");
     namedCall(compiler, canAssign, CODE_SUPER_0);
-  }
-  else if (enclosingClass != NULL)
-  {
+  } else if (enclosingClass != NULL) {
     // No explicit name, so use the name of the enclosing method. Make sure we
     // check that enclosingClass isn't NULL first. We've already reported the
     // error, but we don't want to crash here.
@@ -784,10 +687,8 @@ static void super_(bool canAssign)
   }
 }
 
-static void this_(bool canAssign)
-{
-  if (getEnclosingClass(compiler) == NULL)
-  {
+static void this_(bool canAssign) {
+  if (getEnclosingClass(compiler) == NULL) {
     Error("Cannot use 'this' outside of a method.");
     return;
   }
@@ -795,16 +696,14 @@ static void this_(bool canAssign)
   loadThis(compiler);
 }
 
-static void subscript(bool canAssign)
-{
-  Signature signature = { "", 0, SIG_SUBSCRIPT, 0 };
+static void subscript(bool canAssign) {
+  Signature signature = {"", 0, SIG_SUBSCRIPT, 0};
 
   // Parse the argument list.
   FinishArgumentList(compiler, &signature);
   Expect(TOKEN_RIGHT_BRACKET, "Expect ']' after arguments.");
 
-  if (canAssign && Match(TOKEN_EQ))
-  {
+  if (canAssign && Match(TOKEN_EQ)) {
     signature.type = SIG_SUBSCRIPT_SETTER;
 
     // Compile the assigned value.
@@ -815,15 +714,13 @@ static void subscript(bool canAssign)
   CallSignature(compiler, CODE_CALL_0, &signature);
 }
 
-static void call(bool canAssign)
-{
+static void call(bool canAssign) {
   ignoreNewlines(compiler);
   Expect(TOKEN_NAME, "Expect method name after '.'.");
   namedCall(compiler, canAssign, CODE_CALL_0);
 }
 
-static void and_(bool canAssign)
-{
+static void and_(bool canAssign) {
   ignoreNewlines(compiler);
 
   // Skip the right argument if the left is false.
@@ -832,8 +729,7 @@ static void and_(bool canAssign)
   PatchJump(compiler, jump);
 }
 
-static void or_(bool canAssign)
-{
+static void or_(bool canAssign) {
   ignoreNewlines(compiler);
 
   // Skip the right argument if the left is true.
@@ -842,8 +738,7 @@ static void or_(bool canAssign)
   PatchJump(compiler, jump);
 }
 
-static void conditional(bool canAssign)
-{
+static void conditional(bool canAssign) {
   // Ignore newline after '?'.
   ignoreNewlines(compiler);
 
@@ -853,8 +748,7 @@ static void conditional(bool canAssign)
   // Compile the then branch.
   parsePrecedence(compiler, PREC_CONDITIONAL);
 
-  Expect(TOKEN_COLON,
-          "Expect ':' after then branch of conditional operator.");
+  Expect(TOKEN_COLON, "Expect ':' after then branch of conditional operator.");
   ignoreNewlines(compiler);
 
   // Jump over the else branch when the if branch is taken.
@@ -869,8 +763,7 @@ static void conditional(bool canAssign)
   PatchJump(compiler, elseJump);
 }
 
-void infixOp(bool canAssign)
-{
+void infixOp(bool canAssign) {
   GrammarRule* rule = getRule(compiler->parser->previous.type);
 
   // An infix operator cannot end an expression.
@@ -880,12 +773,11 @@ void infixOp(bool canAssign)
   parsePrecedence(compiler, (Precedence)(rule->precedence + 1));
 
   // Call the operator method on the left-hand side.
-  Signature signature = { rule->name, (int)strlen(rule->name), SIG_METHOD, 1 };
+  Signature signature = {rule->name, (int)strlen(rule->name), SIG_METHOD, 1};
   CallSignature(compiler, CODE_CALL_0, &signature);
 }
 
-void infixSignature(Signature* signature)
-{
+void infixSignature(Signature* signature) {
   // Add the RHS parameter.
   signature->type = SIG_METHOD;
   signature->arity = 1;
@@ -896,19 +788,16 @@ void infixSignature(Signature* signature)
   Expect(TOKEN_RIGHT_PAREN, "Expect ')' after parameter name.");
 }
 
-void unarySignature(Signature* signature)
-{
+void unarySignature(Signature* signature) {
   // Do nothing. The name is already complete.
   signature->type = SIG_GETTER;
 }
 
-void mixedSignature(Signature* signature)
-{
+void mixedSignature(Signature* signature) {
   signature->type = SIG_GETTER;
 
   // If there is a parameter, it's an infix operator, otherwise it's unary.
-  if (Match(TOKEN_LEFT_PAREN))
-  {
+  if (Match(TOKEN_LEFT_PAREN)) {
     // Add the RHS parameter.
     signature->type = SIG_METHOD;
     signature->arity = 1;
@@ -919,18 +808,14 @@ void mixedSignature(Signature* signature)
   }
 }
 
-static bool maybeSetter(Signature* signature)
-{
+static bool maybeSetter(Signature* signature) {
   // See if it's a setter.
   if (!Match(TOKEN_EQ)) return false;
 
   // It's a setter.
-  if (signature->type == SIG_SUBSCRIPT)
-  {
+  if (signature->type == SIG_SUBSCRIPT) {
     signature->type = SIG_SUBSCRIPT_SETTER;
-  }
-  else
-  {
+  } else {
     signature->type = SIG_SETTER;
   }
 
@@ -944,8 +829,7 @@ static bool maybeSetter(Signature* signature)
   return true;
 }
 
-void subscriptSignature(Signature* signature)
-{
+void subscriptSignature(Signature* signature) {
   signature->type = SIG_SUBSCRIPT;
 
   // The signature currently has "[" as its name since that was the token that
@@ -1005,12 +889,7 @@ void Parser::ConstructorSignature(Signature* signature) {
   Expect(TOKEN_RIGHT_PAREN, "Expect ')' after parameters.");
 }
 
-
-
-
-static GrammarRule* GetRule(TokenType type) {
-  return &rules[type];
-}
+static GrammarRule* GetRule(TokenType type) { return &rules[type]; }
 
 void Parser::ParsePrecedence(Precedence precedence) {
   NextToken();
@@ -1031,11 +910,10 @@ void Parser::ParsePrecedence(Precedence precedence) {
   }
 }
 
-void Parser::Expression() {
-  ParsePrecedence(PREC_LOWEST);
-}
+void Parser::Expression() { ParsePrecedence(PREC_LOWEST); }
 
-int Parser::GetNumArguments(const uint8* bytecode, const Value* constants, int ip) {
+int Parser::GetNumArguments(const uint8* bytecode, const Value* constants,
+                            int ip) {
   Code instruction = (Code)bytecode[ip];
   switch (instruction) {
     case CODE_NULL:
@@ -1141,9 +1019,7 @@ void Parser::StartLoop(Loop* loop) {
   loop_ = loop;
 }
 
-void Parser::TestExitLoop() {
-  loop_->exit_jump = EmitJump(CODE_JUMP_IF);
-}
+void Parser::TestExitLoop() { loop_->exit_jump = EmitJump(CODE_JUMP_IF); }
 
 void Parser::LoopBody() {
   loop_->body = fn_->code.count;
@@ -1185,8 +1061,10 @@ void Parser::ForStatement() {
   Expression();
 
   if (num_locals_ + 2 > MAX_LOCALS) {
-    Error("Cannot declare more than %d variables in one scope. (Not enough space for for-loops internal variables)",
-          MAX_LOCALS);
+    Error(
+        "Cannot declare more than %d variables in one scope. (Not enough space "
+        "for for-loops internal variables)",
+        MAX_LOCALS);
     return;
   }
 
@@ -1310,7 +1188,7 @@ void Parser::Definition() {
 }
 
 int ResolveLocal(const char* name, int length) {
-  for (int i = num_locals_-1; i >= 0; --i) {
+  for (int i = num_locals_ - 1; i >= 0; --i) {
     if (locals_[i].length == length &&
         memcmp(name, locals_[i].name, length) == 0) {
       return i;
@@ -1327,7 +1205,7 @@ int AddUpvalue(bool local, int index) {
       return i;
     }
   }
-  
+
   upvalues[fn_->num_upvalues].local = local;
   upvalues[fn_->num_upvalues].index = index;
   return fn_->num_upvalues++;
@@ -1337,7 +1215,7 @@ int FindUpvalue(const char* name, int length) {
   if (parent_ == nullptr) {
     return -1;
   }
-  
+
   if (name[0] != '_' && compiler->parent->enclosingClass != NULL) return -1;
 
   // See if it's a local variable in the immediately enclosing function.
@@ -1356,7 +1234,7 @@ static Variable ResolveNonmodule(const char* name, int length) {
   if (var.index != -1) {
     return var;
   }
-  
+
   var.scope = SCOPE_UPVALUE;
   var.index = FindUpvalue(name, length);
   return var;
@@ -1367,21 +1245,17 @@ Variable ResolveName(const char* name, int length) {
   if (var.index != -1) {
     return var;
   }
-  
+
   var.scope = SCOPE_MODULE;
   var.index = ffSymboleTableFind(&module_->variable_names_, name, length);
   return var;
 }
 
-
 void LoadLocal(int slot) {
   if (slot <= 8) {
-    EmitOp((Code)(CODE_LOAD_LOCAL_0 + slot)); // no argument
+    EmitOp((Code)(CODE_LOAD_LOCAL_0 + slot));  // no argument
     return;
   }
-  
+
   EmitByteArg(CODE_LOAD_LOCAL, slot);
 }
-
-
-
