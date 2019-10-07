@@ -121,7 +121,7 @@ static bool FinishBlock() {
   // Compile the definition list.
   do {
     Definition();
-    ConsumeLine( "Expect newline after statement.");
+    ConsumeLine("Expect newline after statement.");
   } while (Peek() != TOKEN_RIGHT_BRACE && Peek() != TOKEN_EOF);
 
   Expect(TOKEN_RIGHT_BRACE, "Expect '}' at end of block.");
@@ -165,8 +165,8 @@ static void finishParameterList(Signature* signature) {
 
 // Gets the symbol for a method [name] with [length].
 static int methodSymbol(const char* name, int length) {
-  return wrenSymbolTableEnsure(
-      lexer_->vm, &lexer_->vm->methodNames, name, length);
+  return wrenSymbolTableEnsure(lexer_->vm, &lexer_->vm->methodNames, name,
+                               length);
 }
 
 static void signatureParameterList(char name[MAX_METHOD_SIGNATURE], int* length,
@@ -384,13 +384,11 @@ static void LoadVariable(Variable variable) {
   }
 }
 
-static void LoadThis() {
-  LoadVariable(ResolveNonmodule(compiler, "this", 4));
-}
+static void LoadThis() { LoadVariable(ResolveNonmodule(compiler, "this", 4)); }
 
 static void loadCoreVariable(const char* name) {
-  int symbol = wrenSymbolTableFind(&lexer_->module->variableNames,
-                                   name, strlen(name));
+  int symbol =
+      wrenSymbolTableFind(&lexer_->module->variableNames, name, strlen(name));
   ASSERT(symbol != -1, "Should have already defined core name.");
   EmitShortArg(CODE_LOAD_MODULE_VAR, symbol);
 }
@@ -464,8 +462,8 @@ static void unaryOp(bool assignable) {
 }
 
 static void boolean(bool assignable) {
-  EmitOp(compiler, lexer_->previous.type == TOKEN_FALSE ? CODE_FALSE
-                                                                  : CODE_TRUE);
+  EmitOp(compiler,
+         lexer_->previous.type == TOKEN_FALSE ? CODE_FALSE : CODE_TRUE);
 }
 
 static Compiler* getEnclosingClassCompiler() {
@@ -497,9 +495,9 @@ static void field(bool assignable) {
     Error("Cannot use an instance field in a static method.");
   } else {
     // Look up the field, or implicitly define it.
-    field = wrenSymbolTableEnsure(lexer_->vm, &enclosingClass->fields,
-                                  lexer_->previous.start,
-                                  lexer_->previous.length);
+    field =
+        wrenSymbolTableEnsure(lexer_->vm, &enclosingClass->fields,
+                              lexer_->previous.start, lexer_->previous.length);
 
     if (field >= MAX_FIELDS) {
       Error("A class can only have %d fields.", MAX_FIELDS);
@@ -616,9 +614,8 @@ static void name(bool assignable) {
   if (variable.index == -1) {
     // Implicitly define a module-level variable in
     // the hopes that we get a real definition later.
-    variable.index =
-        wrenDeclareVariable(lexer_->vm, lexer_->module,
-                            token->start, token->length, token->line);
+    variable.index = wrenDeclareVariable(
+        lexer_->vm, lexer_->module, token->start, token->length, token->line);
 
     if (variable.index == -2) {
       Error("Too many module variables defined.");
@@ -631,9 +628,7 @@ static void name(bool assignable) {
 static void null(bool assignable) { EmitOp(compiler, CODE_NULL); }
 
 // A number or string literal.
-static void literal(bool assignable) {
-  emitConstant(lexer_->previous.value);
-}
+static void literal(bool assignable) { emitConstant(lexer_->previous.value); }
 
 static void stringInterpolation(bool assignable) {
   // Instantiate a new list.
@@ -683,7 +678,7 @@ static void super_(bool assignable) {
     // No explicit name, so use the name of the enclosing method. Make sure we
     // check that enclosingClass isn't NULL first. We've already reported the
     // error, but we don't want to crash here.
-    MethodCall( CODE_SUPER_0, enclosingClass->signature);
+    MethodCall(CODE_SUPER_0, enclosingClass->signature);
   }
 }
 

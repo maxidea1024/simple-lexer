@@ -1,14 +1,13 @@
 #pragma once
 
-#include <vector>
 #include <string>
+#include <vector>
 
 #include "value.h"
 
 // {} : braces
 // [] : brackets
 // () : parenthesis
-
 
 /*
 static void stringInterpolation(Compiler* compiler, bool canAssign) {
@@ -38,7 +37,6 @@ static void stringInterpolation(Compiler* compiler, bool canAssign) {
   callMethod(compiler, 0, "join()", 6);
 }
 */
-
 
 enum TokenType {
   TOKEN_LEFT_PAREN,
@@ -81,9 +79,9 @@ enum TokenType {
   TOKEN_EQEQ,
   TOKEN_BANGEQ,
 
-  //TODO
-  //TOKEN_EQEQEQ,
-  //TOKEN_BANGEQEQEQ,
+  // TODO
+  // TOKEN_EQEQEQ,
+  // TOKEN_BANGEQEQEQ,
 
   TOKEN_BREAK,
   TOKEN_CLASS,
@@ -202,7 +200,7 @@ class Lexer {
   int num_interp_braces_;
 
   char read_string_quote_char_;
-  int read_string_quote_count_; // 1 or 3
+  int read_string_quote_count_;  // 1 or 3
   bool read_string_verbatim_;
 
   bool skip_new_lines_;

@@ -1,8 +1,12 @@
+#ifdef _MSC_VER
+#pragma warning(disable : 4819)
+#endif
+
 #include <assert.h>
+#include <stdarg.h>
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdarg.h>
 
 #include "lexer.h"
 #include "strings.h"
@@ -16,26 +20,26 @@ struct Keyword {
 
 // The table of reserved words and their associated token types.
 static Keyword keywords[] = {
-  {"break", 5, TOKEN_BREAK},
-  {"class", 5, TOKEN_CLASS},
-  {"construct", 9, TOKEN_CONSTRUCT},
-  {"else", 4, TOKEN_ELSE},
-  {"false", 5, TOKEN_FALSE},
-  {"for", 3, TOKEN_FOR},
-  {"foreign", 7, TOKEN_FOREIGN},
-  {"if", 2, TOKEN_IF},
-  {"import", 6, TOKEN_IMPORT},
-  {"in", 2, TOKEN_IN},
-  {"is", 2, TOKEN_IS},
-  {"null", 4, TOKEN_NULL},
-  {"return", 6, TOKEN_RETURN},
-  {"static", 6, TOKEN_STATIC},
-  {"super", 5, TOKEN_SUPER},
-  {"this", 4, TOKEN_THIS},
-  {"true", 4, TOKEN_TRUE},
-  {"var", 3, TOKEN_VAR},
-  {"while", 5, TOKEN_WHILE},
-  {NULL, 0, TOKEN_EOF}  // Sentinel to mark the end of the array.
+    {"break", 5, TOKEN_BREAK},
+    {"class", 5, TOKEN_CLASS},
+    {"construct", 9, TOKEN_CONSTRUCT},
+    {"else", 4, TOKEN_ELSE},
+    {"false", 5, TOKEN_FALSE},
+    {"for", 3, TOKEN_FOR},
+    {"foreign", 7, TOKEN_FOREIGN},
+    {"if", 2, TOKEN_IF},
+    {"import", 6, TOKEN_IMPORT},
+    {"in", 2, TOKEN_IN},
+    {"is", 2, TOKEN_IS},
+    {"null", 4, TOKEN_NULL},
+    {"return", 6, TOKEN_RETURN},
+    {"static", 6, TOKEN_STATIC},
+    {"super", 5, TOKEN_SUPER},
+    {"this", 4, TOKEN_THIS},
+    {"true", 4, TOKEN_TRUE},
+    {"var", 3, TOKEN_VAR},
+    {"while", 5, TOKEN_WHILE},
+    {NULL, 0, TOKEN_EOF}  // Sentinel to mark the end of the array.
 };
 
 Lexer::Lexer() { Init("", 0); }
@@ -73,17 +77,11 @@ void Lexer::Init(const char* source, size_t source_length) {
   NextToken();
 }
 
-bool Lexer::IsEOF() const {
-  return current.type == TOKEN_EOF;
-}
+bool Lexer::IsEOF() const { return current.type == TOKEN_EOF; }
 
-bool Lexer::IsError() const {
-  return current.type == TOKEN_ERROR;
-}
+bool Lexer::IsError() const { return current.type == TOKEN_ERROR; }
 
-bool Lexer::HasNextToken() const {
-  return !IsEOF() && !IsError();
-}
+bool Lexer::HasNextToken() const { return !IsEOF() && !IsError(); }
 
 // Returns true if [c] is a valid (non-initial) identifier character.
 inline bool IsName(char c) {
@@ -109,7 +107,7 @@ char Lexer::PeekNextChar() const {
 // Advances the lexer forward one character.
 char Lexer::NextChar() {
   char c = PeekChar();
-  //assert(*current_char_);
+  // assert(*current_char_);
   current_char_++;
   if (c == '\n') {
     current_line_++;
@@ -129,11 +127,11 @@ char Lexer::UngetChar() {
   current_char_--;
   if (*current_char_ == '\n') {
     current_line_--;
-    //FIXME: 이전줄의 끝의 컬럼 번호로 해주어야함!
-    //FIXME: 이전줄의 끝의 컬럼 번호로 해주어야함!
-    //FIXME: 이전줄의 끝의 컬럼 번호로 해주어야함!
-    //FIXME: 이전줄의 끝의 컬럼 번호로 해주어야함!
-    //FIXME: 이전줄의 끝의 컬럼 번호로 해주어야함!
+    // FIXME: 이전줄의 끝의 컬럼 번호로 해주어야함!
+    // FIXME: 이전줄의 끝의 컬럼 번호로 해주어야함!
+    // FIXME: 이전줄의 끝의 컬럼 번호로 해주어야함!
+    // FIXME: 이전줄의 끝의 컬럼 번호로 해주어야함!
+    // FIXME: 이전줄의 끝의 컬럼 번호로 해주어야함!
   } else if (*current_char_ == '\t') {
     current_column_ -= tab_size_;
   } else {
@@ -228,7 +226,7 @@ int Lexer::ReadHexDigit() {
 
   // Don't consume it if it isn't expected. Keeps us from reading past the end
   // of an unterminated string.
-  //current_char_--;
+  // current_char_--;
   UngetChar();
   return -1;
 }
@@ -324,7 +322,7 @@ int Lexer::ReadHexEscape(int digits, const char* tag) {
 
       // Don't consume it if it isn't expected. Keeps us from reading past the
       // end of an unterminated string.
-      //current_char_--;
+      // current_char_--;
       UngetChar();
       break;
     }
@@ -368,7 +366,7 @@ void Lexer::PrepareReadString(char quote_char, bool force_verbatim) {
     if (MatchChar(quote_char)) {
       read_string_quote_count_ = 3;
     } else {
-      //current_char_--;
+      // current_char_--;
       UngetChar();
     }
   }
@@ -388,14 +386,14 @@ void Lexer::ReadString() {
         break;
       } else {
         // three quotes
-        //warning:
+        // warning:
         // quote 문자 뒤에 라인피드가 오면 문제가 발생할 수 있음!
         // 이부분에 대해서는 보완이 필요함.
         if (MatchChar(read_string_quote_char_)) {
           if (MatchChar(read_string_quote_char_)) {
             break;
           } else {
-            //current_char_--;
+            // current_char_--;
             UngetChar();
           }
         }
@@ -407,7 +405,7 @@ void Lexer::ReadString() {
 
       // Don't consume it if it isn't expected. Keeps us from reading past the
       // end of an unterminated string.
-      //current_char_--;
+      // current_char_--;
       UngetChar();
       break;
     }
@@ -540,7 +538,8 @@ void Lexer::NextToken() {
         return;
 
       case '}':
-        if (num_interp_braces_ > 0 && --interp_braces_[num_interp_braces_ - 1] == 0) {
+        if (num_interp_braces_ > 0 &&
+            --interp_braces_[num_interp_braces_ - 1] == 0) {
           // This is the final "}", so the interpolation expression has ended.
           // This "}" now begins the next section of the template string.
           num_interp_braces_--;
@@ -716,7 +715,7 @@ void Lexer::LexError(const char* error, ...) {
   vsnprintf_s(buf, 2048 - 1, error, arg_list);
   va_end(arg_list);
 
-  //TODO 그냥 마지막 에러 메시지를 저장하는 정도만 하면 되지 않으려나??
+  // TODO 그냥 마지막 에러 메시지를 저장하는 정도만 하면 되지 않으려나??
 
   fprintf(stderr, "LEX-ERROR(#%d:%d): %s\n", current.line, current.column, buf);
   fflush(stderr);
@@ -882,7 +881,7 @@ std::string Token::ToString() const {
       break;
 
     case TOKEN_LINE:
-      //linefeed는 escape하던지 안보여주던지...
+      // linefeed는 escape하던지 안보여주던지...
       break;
 
     default:

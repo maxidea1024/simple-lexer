@@ -13,36 +13,39 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="src">
+      <UniqueIdentifier>{abcd315e-b2e4-4328-af3c-7e71b3eba1d8}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="lexer.cc">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="strings.cc">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="util.cc">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
-    <ClCompile Include="value.cc">
-      <Filter>소스 파일</Filter>
-    </ClCompile>
     <ClCompile Include="main.cc">
       <Filter>소스 파일</Filter>
     </ClCompile>
+    <ClCompile Include="src\lexer.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\strings.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\util.cc">
+      <Filter>src</Filter>
+    </ClCompile>
+    <ClCompile Include="src\value.cc">
+      <Filter>src</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="lexer.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="src\lexer.h">
+      <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="strings.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="src\strings.h">
+      <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="util.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="src\util.h">
+      <Filter>src</Filter>
     </ClInclude>
-    <ClInclude Include="value.h">
-      <Filter>헤더 파일</Filter>
+    <ClInclude Include="src\value.h">
+      <Filter>src</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

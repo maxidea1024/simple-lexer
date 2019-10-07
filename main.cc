@@ -1,4 +1,4 @@
-#include "lexer.h"
+#include "src/lexer.h"
 
 int main(int argc, char* argv[]) {
   Lexer l;
