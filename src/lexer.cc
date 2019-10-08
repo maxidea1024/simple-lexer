@@ -72,6 +72,7 @@ void Lexer::Init(const char* source, size_t source_length) {
   // Ignore leading newlines.
   skip_new_lines_ = true;
   print_errors_ = true;
+  has_errors_ = false;
 
   // Read the first token.
   NextToken();
@@ -79,9 +80,9 @@ void Lexer::Init(const char* source, size_t source_length) {
 
 bool Lexer::IsEOF() const { return current.type == TOKEN_EOF; }
 
-bool Lexer::IsError() const { return current.type == TOKEN_ERROR; }
+bool Lexer::HasErrors() const { return has_errors_; }
 
-bool Lexer::HasNextToken() const { return !IsEOF() && !IsError(); }
+bool Lexer::HasNextToken() const { return !IsEOF() && !HasErrors(); }
 
 // Returns true if [c] is a valid (non-initial) identifier character.
 inline bool IsName(char c) {
@@ -410,6 +411,13 @@ void Lexer::ReadString() {
       break;
     }
 
+    if (c == '\n') {
+      if (!read_string_verbatim_) {
+        LexError("EOL while scanning string literal");
+        return;
+      }
+    }
+
     if (c == '$') {
       if (num_interp_braces_ < MAX_INTERPOLATION_NESTING) {
         // TODO: Allow format string.
@@ -716,10 +724,56 @@ void Lexer::LexError(const char* error, ...) {
   va_end(arg_list);
 
   // TODO 그냥 마지막 에러 메시지를 저장하는 정도만 하면 되지 않으려나??
+  //마지막 에러 내용을 저장하고 있어야함!
 
-  fprintf(stderr, "LEX-ERROR(#%d:%d): %s\n", current.line, current.column, buf);
-  fflush(stderr);
+  has_errors_ = true;
+
+  if (print_errors_) {
+    fprintf(stderr, "LEX-ERROR(#%d:%d): %s\n", current.line, current.column, buf);
+    fflush(stderr);
+  }
 }
+
+
+
+/*
+
+
+
+void Lexer::LexError(const char* format, ...) {
+  va_list va;
+  va_start(va, format);
+  PrintError(current_line_, "Error", format, va);
+  va_end(va);
+}
+
+void Compiler::Error(const char* format, ...) {
+  Token& token = previous;
+
+  // If the parse error was caused by an error token, the lexer has already report it.
+  if (token.type == TOKEN_ERROR) {
+    return;
+  }
+  
+  va_list va;
+  va_start(va, format);
+  if (token.type == TOKEN_LINE) {
+    PrintError(token.line, "Error at newline", format, va);
+  } else if (token.type == TOKEN_EOF) {
+    PrintError(token.line, "Error at end of file", format, va);
+  } else {
+    char label[10 + MAX_VARIABLE_NAME + 4 + 1];
+    if (token.length <= MAX_VARIABLE_NAME) {
+      sprintf(label, "Error at '%.*s'", token.length, token.start);
+    } else {
+      sprintf(label, "Error at '%.*s...'", MAX_VARIABLE_NAME, token.start);
+    }
+    PrintError(token.line, label, format, va);
+  }
+  va_end(va);
+}
+*/
+
 
 std::string Token::TypeName() const {
   switch (type) {

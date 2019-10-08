@@ -154,7 +154,7 @@ class Lexer {
   void Init(const char* source, size_t source_length);
 
   bool IsEOF() const;
-  bool IsError() const;
+  bool HasErrors() const;
   bool HasNextToken() const;
 
   char PeekChar() const;
