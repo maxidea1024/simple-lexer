@@ -115,7 +115,7 @@ enum TokenType {
   // A portion of a string literal preceding an interpolated expression. This
   // string:
   //
-  //     "a %(b) c %(d) e"
+  //     "a ${b} c ${d} e"
   //
   // is tokenized to:
   //
@@ -194,7 +194,7 @@ class Lexer {
   // The maximum depth that interpolation can nest. For example, this string has
   // three levels:
   //
-  //      "outside %(one + "%(two + "%(three)")")"
+  //      "outside ${one + "${two + "${three}"}"}"
   static const int MAX_INTERPOLATION_NESTING = 8;
   int interp_braces_[MAX_INTERPOLATION_NESTING];
   int num_interp_braces_;
